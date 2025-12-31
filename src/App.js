@@ -1,24 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Dashboard from "./Admin/pages/Dashboard";
+import ProductList from "./Admin/pages/ProductList";
+import ProductCreate from "./Admin/pages/ProductCreate";
+import ProductUpdate from "./Admin/pages/ProductUpdate";
+import ProductDetail from "./Admin/pages/ProductDetail";
+import NewsList from "./Admin/News/NewsList";
+import NewsForm from "./Admin/News/NewsForm";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+     
+        <Routes>
+          <Route path="" element={<Dashboard />} />
+          <Route path="/products" element={<ProductList />} />
+           <Route path="/productscreate" element={<ProductCreate />} />  
+          <Route path="/products/update/:id" element={<ProductUpdate />} />
+          <Route path="/products/detail/:id" element={<ProductDetail />} />
+          <Route path="/news" element={<NewsList />} />
+          <Route path="/news/create" element={<NewsForm />} />
+          <Route path="/news/edit/:id" element={<NewsForm />} />
+        </Routes>
+      
+    </BrowserRouter>
   );
 }
 
