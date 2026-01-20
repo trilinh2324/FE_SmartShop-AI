@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { deleteNews, getAllNews } from "../api/News/newsApi";
+import { deleteNews, getAllNews } from "../../api/News/newsApi";
 import { Link } from "react-router-dom";
 
 const NewsList = () => {

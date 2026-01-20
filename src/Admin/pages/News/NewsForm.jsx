@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { createNews, getNewsById, updateNews } from "../api/News/newsApi";
+import { createNews, getNewsById, updateNews } from "../../api/News/newsApi";
 import { useNavigate, useParams } from "react-router-dom";
 
 const NewsForm = () => {

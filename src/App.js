@@ -4,15 +4,16 @@ import ProductList from "./Admin/pages/ProductList";
 import ProductCreate from "./Admin/pages/ProductCreate";
 import ProductUpdate from "./Admin/pages/ProductUpdate";
 import ProductDetail from "./Admin/pages/ProductDetail";
-import NewsList from "./Admin/News/NewsList";
-import NewsForm from "./Admin/News/NewsForm";
-
+import NewsList from "./Admin/pages/News/NewsList";
+import NewsForm from "./Admin/pages/News/NewsForm";
+import Login from "./Admin/pages/Login";
 function App() {
   return (
     <BrowserRouter>
      
         <Routes>
           <Route path="" element={<Dashboard />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/products" element={<ProductList />} />
            <Route path="/productscreate" element={<ProductCreate />} />  
           <Route path="/products/update/:id" element={<ProductUpdate />} />
