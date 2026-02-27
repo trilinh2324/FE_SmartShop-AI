@@ -1,0 +1,136 @@
+.footer {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 48px 0;
+    margin-top: 48px;
+  }
+  
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+  
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .footer-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  
+  .footer-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  
+  .footer-description {
+    font-size: 14px;
+    color: #cccccc;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  
+  .social-links {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .social-links a {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .social-links a:hover {
+    background-color: #d41e3b;
+    border-color: #d41e3b;
+    transform: translateY(-2px);
+  }
+  
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .footer-links li a {
+    font-size: 14px;
+    color: #cccccc;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+  
+  .footer-links li a:hover {
+    color: #d41e3b;
+    padding-left: 4px;
+  }
+  
+  .footer-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+  }
+  
+  .footer-copyright {
+    text-align: center;
+    font-size: 13px;
+    color: #999999;
+  }
+  
+  @media (max-width: 768px) {
+    .footer {
+      padding: 32px 0;
+      margin-top: 32px;
+    }
+  
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+  
+    .footer-title {
+      font-size: 16px;
+    }
+  
+    .footer-subtitle {
+      font-size: 14px;
+    }
+  
+    .footer-description {
+      font-size: 13px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  
+    .social-links a {
+      width: 36px;
+      height: 36px;
+    }
+  }

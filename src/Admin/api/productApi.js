@@ -1,32 +1,31 @@
-import axios from "axios";
+import instance from "./utils/axiosConfig"; 
 
-const API_URL = "http://localhost:8080/api/products";
+const API_URL = "/api/products";
 
-// ✅ CREATE PRODUCT (multipart/form-data)
+// ✅ CREATE PRODUCT
 export const createProduct = (formData) => {
-  return axios.post(API_URL, formData, {
+  return instance.post(API_URL, formData, {
     headers: {
-      "Content-Type": "multipart/form-data"
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
 };
 
-// ✏️ UPDATE PRODUCT (nếu cũng có ảnh)
+// ✏️ UPDATE PRODUCT
 export const updateProduct = (id, formData) => {
-  return axios.put(`${API_URL}/${id}`, formData, {
+  return instance.put(`${API_URL}/${id}`, formData, {
     headers: {
-      "Content-Type": "multipart/form-data"
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
 };
 
 // 🗑️ DELETE
-export const deleteProduct = (id) =>
-  axios.delete(`${API_URL}/${id}`);
+export const deleteProduct = (id) => {
+  return instance.delete(`${API_URL}/${id}`);
+};
 
-// 📥 GET
-export const getProducts = () =>
-  axios.get(API_URL);
-
-export const getAllProducts = () =>
-  axios.get(API_URL);
+// 📥 GET ALL
+export const getProducts = () => {
+  return instance.get(API_URL);
+};

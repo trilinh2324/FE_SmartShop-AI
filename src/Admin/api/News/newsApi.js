@@ -1,18 +1,32 @@
-import axios from "axios";
+// ❌ KHÔNG import axios thường nữa
+// import axios from "axios";
 
-const API = "http://localhost:8080/api/news";
+import instance from "../utils/axiosConfig"; // ✅ dùng instance có token
 
-export const getAllNews = () => axios.get(API);
-export const getNewsById = (id) => axios.get(`${API}/${id}`);
+const API = "/api/news";
 
+// GET ALL
+export const getAllNews = () => instance.get(API);
+
+// GET BY ID
+export const getNewsById = (id) => instance.get(`${API}/${id}`);
+
+// CREATE
 export const createNews = (formData) =>
-  axios.post(API, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+  instance.post(API, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
 
+// UPDATE
 export const updateNews = (id, formData) =>
-  axios.put(`${API}/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+  instance.put(`${API}/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
 
-export const deleteNews = (id) => axios.delete(`${API}/${id}`);
+// DELETE
+export const deleteNews = (id) =>
+  instance.delete(`${API}/${id}`);

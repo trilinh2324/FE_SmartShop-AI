@@ -14,8 +14,10 @@ import {
   ShoppingCart,
   Users,
   LogOut,
+  LayoutGrid,
+  Newspaper, 
 } from "lucide-react";
-import "../css/ProductDetail.css";
+import "../../css/ProductDetail.css";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -58,14 +60,16 @@ export default function ProductDetail() {
               </div>
 
               <nav>
-                <a onClick={() => navigate("/admin")}><Home /> Dashboard</a>
-                <a onClick={() => navigate("/products")}><Package /> Sản phẩm</a>
-                <a><ShoppingCart /> Đơn hàng</a>
-                <a><Users /> Người dùng</a>
+                <a onClick={() => navigate("/admin/home")}><Home /> Dashboard</a>
+                <a onClick={() => navigate("/admin/products")}><Package /> Sản phẩm</a>
+                <a onClick={() => navigate("/admin/categorys")}><LayoutGrid /> Danh mục</a>
+                <a onClick={() => navigate("/admin/newslist")}><Newspaper  /> Tin Tức </a>
+                <a onClick={() => navigate("/admin/orders")}><ShoppingCart /> Đơn hàng</a>
+                <a onClick={() => navigate("/admin/users")}><Users /> Người dùng</a>
               </nav>
 
               <div className="logout">
-                <a onClick={() => navigate("/login")}>
+                <a onClick={() => navigate("/admin/login")}>
                   <LogOut /> Đăng xuất
                 </a>
               </div>
@@ -79,14 +83,16 @@ export default function ProductDetail() {
         <h2>SMARTSHOP</h2>
 
         <nav>
-          <a onClick={() => navigate("/admin")}><Home /> Dashboard</a>
-          <a className="active" onClick={() => navigate("/products")}><Package /> Sản phẩm</a>
-          <a><ShoppingCart /> Đơn hàng</a>
-          <a><Users /> Người dùng</a>
+          <a onClick={() => navigate("/admin/home")}><Home /> Dashboard</a>
+          <a className="active" onClick={() => navigate("/admin/products")}><Package /> Sản phẩm</a>
+          <a onClick={() => navigate("/admin/categorys")}><LayoutGrid /> Danh mục</a>
+          <a onClick={() => navigate("/admin/newslist")}><Newspaper  /> Tin Tức </a>
+          <a onClick={() => navigate("/admin/orders")}><ShoppingCart /> Đơn hàng</a>
+          <a onClick={() => navigate("/admin/users")}><Users /> Người dùng</a>
         </nav>
 
         <div className="logout">
-          <a onClick={() => navigate("/login")}><LogOut /> Đăng xuất</a>
+          <a onClick={() => navigate("/admin/login")}><LogOut /> Đăng xuất</a>
         </div>
       </aside>
 
@@ -98,7 +104,7 @@ export default function ProductDetail() {
         </header>
 
         <section className="pd-page">
-          <button className="btn-back" onClick={() => navigate("/products")}>
+          <button className="btn-back" onClick={() => navigate("/admin/products")}>
             <ArrowLeft /> Quay lại danh sách
           </button>
 
@@ -113,7 +119,7 @@ export default function ProductDetail() {
           <div className="pd-card">
             <h3>Thông tin chung</h3>
             <div className="pd-info">
-              <span>Hãng sản xuất :  <strong>{p.brand}</strong> </span>
+              <span>Hãng sản xuất : {p.brand} </span>
              
             </div>
           </div>

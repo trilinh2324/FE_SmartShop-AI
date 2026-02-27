@@ -1,0 +1,259 @@
+/* ========================= */
+/* ===== LAYOUT ADMIN ===== */
+/* ========================= */
+
+.product-admin {
+  min-height: 100vh;
+  background: #f4f6f9;
+}
+
+.admin {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ========================= */
+/* ===== SIDEBAR DESKTOP ===== */
+/* ========================= */
+
+.sidebar.desktop {
+  width: 250px;
+  background: linear-gradient(180deg, #0f111a, #151826);
+  color: white;
+  padding: 30px 25px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar h2 {
+  color: #e53935;
+  margin-bottom: 40px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 22px;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 15px;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  background: #e53935;
+}
+
+.logout {
+  margin-top: auto;
+}
+
+/* ========================= */
+/* ===== MOBILE HEADER ===== */
+/* ========================= */
+
+.mobile-header {
+  display: none;
+}
+
+/* ========================= */
+/* ===== CONTENT ===== */
+/* ========================= */
+
+.content {
+  flex: 1;
+  padding: 70px 60px;
+}
+
+/* ========================= */
+/* ===== CARD ===== */
+/* ========================= */
+
+.update-card {
+  max-width: 850px;
+  margin: auto;
+  background: white;
+  padding: 60px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== HEADER ===== */
+
+.card-header {
+  margin-bottom: 40px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #111;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.card-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ========================= */
+/* ===== FORM ===== */
+/* ========================= */
+
+.update-card form {
+  width: 100%;
+}
+
+.update-card label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #334155;
+}
+
+.update-card input,
+.update-card select {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+  border: 1px solid #dce1e8;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.update-card input:focus,
+.update-card select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+/* ========================= */
+/* ===== BUTTON GROUP ===== */
+/* ========================= */
+
+.btn-group {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;   /* CĂN PHẢI */
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+/* ===== CANCEL ===== */
+
+.btn-cancel {
+  padding: 8px 22px;
+  height: 40px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+
+  width: auto !important;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+/* ===== SAVE ===== */
+
+.btn-save {
+  padding: 8px 26px;
+  height: 40px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s;
+
+  width: auto !important;
+  flex: unset !important;
+}
+
+.btn-save:hover {
+  background: #1565c0;
+}
+
+/* ========================= */
+/* ===== RESPONSIVE ===== */
+/* ========================= */
+
+@media (max-width: 992px) {
+  .content {
+    padding: 40px 25px;
+  }
+
+  .update-card {
+    padding: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .sidebar.desktop {
+    display: none;
+  }
+
+  .mobile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #0f111a;
+    color: white;
+  }
+
+  .admin {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 30px 20px;
+  }
+
+  .update-card {
+    padding: 30px;
+  }
+
+  .card-header h2 {
+    font-size: 22px;
+  }
+
+  /* Mobile: nút full width */
+  .btn-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-save,
+  .btn-cancel {
+    width: 100% !important;
+  }
+}

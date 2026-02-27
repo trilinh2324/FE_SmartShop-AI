@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../api/utils/axiosConfig";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -9,9 +9,11 @@ import {
   ShoppingCart,
   Users,
   LogOut,
+  LayoutGrid,
+  Newspaper,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import "../css/ProductCreate.css";
+import "../../css/ProductCreate.css";
 
 const ProductCreate = () => {
   const [open, setOpen] = useState(false);
@@ -45,7 +47,7 @@ const ProductCreate = () => {
   // ===== LOAD CATEGORY =====
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/categories")
+      .get("/api/categories")
       .then((res) => setCategories(res.data))
       .catch(console.error);
   }, []);
@@ -82,16 +84,19 @@ const ProductCreate = () => {
   const uploadImage = async (file) => {
     const fd = new FormData();
     fd.append("file", file);
-    const res = await axios.post(
-      "http://localhost:8080/api/uploads/products",
-      fd,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+
+    const res = await axios.post("/api/uploads/products", fd, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
     return res.data;
   };
 
   const handleColorImageChange = async (i, file) => {
     if (!file) return;
+
     const colors = [...form.colors];
     colors[i].imageFile = file;
     setForm({ ...form, colors });
@@ -124,13 +129,25 @@ const ProductCreate = () => {
       if (!v.trim()) e[`detail_${k}`] = "Không được để trống";
     });
 
-    if (form.colors.length === 0) e.colors = "Phải thêm ít nhất 1 màu";
+    if (form.colors.length === 0)
+      e.colors = "Phải thêm ít nhất 1 màu";
+
+    const names = form.colors.map((c) =>
+      c.colorName.trim().toLowerCase()
+    );
+    if (new Set(names).size !== names.length) {
+      form.colors.forEach((_, i) => {
+        e[`colorName_${i}`] = "Màu bị trùng";
+      });
+    }
 
     form.colors.forEach((c, i) => {
-      if (!c.colorName.trim()) e[`colorName_${i}`] = "Chưa nhập tên màu";
+      if (!c.colorName.trim())
+        e[`colorName_${i}`] = "Chưa nhập tên màu";
       if (!c.quantity || c.quantity <= 0)
         e[`quantity_${i}`] = "Số lượng phải > 0";
-      if (!c.image) e[`image_${i}`] = "Chưa upload ảnh";
+      if (!c.image)
+        e[`image_${i}`] = "Chưa upload ảnh";
     });
 
     setErrors(e);
@@ -157,10 +174,10 @@ const ProductCreate = () => {
     };
 
     try {
-      await axios.post("http://localhost:8080/api/products", payload);
+      await axios.post("/api/products", payload);
       alert("🎉 Thêm sản phẩm thành công");
-      navigate("/products");
-     } catch (err) {
+      navigate("/admin/products");
+    } catch (err) {
       const msg = err.response?.data;
       if (typeof msg === "string" && msg.includes("tồn tại")) {
         setErrors({ name: msg });
@@ -172,7 +189,7 @@ const ProductCreate = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/login");
+    navigate("/admin/login");
   };
 
   return (
@@ -197,20 +214,28 @@ const ProductCreate = () => {
                 <span>SMARTSHOP</span>
                 <X onClick={() => setOpen(false)} />
               </div>
+
               <nav>
-                <a onClick={() => navigate("/admin")}>
+                <a onClick={() => navigate("/admin/home")}>
                   <Home /> Dashboard
                 </a>
-                <a onClick={() => navigate("/products")}>
+                <a onClick={() => navigate("/admin/products")}>
                   <Package /> Sản phẩm
                 </a>
-                <a onClick={() => navigate("/orders")}>
+                <a onClick={() => navigate("/admin/categorys")}>
+                  <LayoutGrid /> Danh mục
+                </a>
+                <a onClick={() => navigate("/admin/newslist")}>
+                  <Newspaper /> Tin Tức
+                </a>
+                <a onClick={() => navigate("/admin/orders")}>
                   <ShoppingCart /> Đơn hàng
                 </a>
-                <a onClick={() => navigate("/users")}>
+                <a onClick={() => navigate("/admin/users")}>
                   <Users /> Người dùng
                 </a>
               </nav>
+
               <div className="logout">
                 <a onClick={handleLogout}>
                   <LogOut /> Đăng xuất
@@ -224,18 +249,16 @@ const ProductCreate = () => {
       <aside className="sidebar desktop">
         <h2>SMARTSHOP</h2>
         <nav>
-          <a onClick={() => navigate("/admin")}>
+          <a onClick={() => navigate("/admin/home")}>
             <Home /> Dashboard
           </a>
           <a className="active">
             <Package /> Sản phẩm
           </a>
-          <a onClick={() => navigate("/orders")}>
-            <ShoppingCart /> Đơn hàng
-          </a>
-          <a onClick={() => navigate("/users")}>
-            <Users /> Người dùng
-          </a>
+           <a onClick={() => navigate("/admin/categorys")}><LayoutGrid /> Danh mục</a>
+          <a onClick={() => navigate("/admin/newslist")}><Newspaper  /> Tin Tức </a>
+          <a onClick={() => navigate("/admin/orders")}> <ShoppingCart /> Đơn hàng</a>
+          <a onClick={() => navigate("/admin/users")}> <Users /> Người dùng</a>
         </nav>
         <div className="logout">
           <a onClick={handleLogout}>
@@ -252,7 +275,7 @@ const ProductCreate = () => {
 
         <div className="create-page">
           <div className="create-card">
-            <button className="btn-back" onClick={() => navigate("/products")}>
+            <button className="btn-back" onClick={() => navigate("/admin/products")}>
               ← Quay lại danh sách
             </button>
 
@@ -377,19 +400,28 @@ const ProductCreate = () => {
                       <div className="no-img">No Image</div>
                     )}
                   </div>
-
+<div>
                   <input
                     name="colorName"
                     placeholder="Tên màu"
                     value={c.colorName}
                     onChange={(e) => handleColorChange(i, e)}
+                     className={
+                        errors[`colorName_${i}`] ? "error-input" : ""
+                      }
                   />
+                   {errors[`colorName_${i}`] && (
+                      <p className="error-text">
+                        {errors[`colorName_${i}`]}
+                      </p>
+                    )} </div>
                   <input
                     type="number"
                     name="quantity"
                     placeholder="Số lượng"
                     value={c.quantity}
                     onChange={(e) => handleColorChange(i, e)}
+                    
                   />
                   <input
                     type="file"
@@ -404,7 +436,7 @@ const ProductCreate = () => {
 
             <button className="btn-add" onClick={addColor}>
               ➕ Thêm màu
-            </button>
+            </button> <br/>
             <button className="save-btn" onClick={submit}>
               💾 Lưu sản phẩm
             </button>
