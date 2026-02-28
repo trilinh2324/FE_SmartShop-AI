@@ -60,15 +60,9 @@ export default function Dashboard() {
       "Bạn có chắc muốn đăng xuất?"
     );
     if (!confirmLogout) return;
-
-    // Xóa dữ liệu đăng nhập
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
-    // Chuyển về login và xóa history
     navigate("/admin/login", { replace: true });
-
-    // Reload để reset toàn bộ state app
     setTimeout(() => {
       window.location.reload();
     }, 100);

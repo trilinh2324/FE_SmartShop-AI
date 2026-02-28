@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/home/Header";
 import Footer from "../components/home/Footer";
-import "../../Users/css/login.css";
+
 import "../css/UserProfile.css";
 import { VIETNAM_CITIES, DISTRICT_BY_CITY, WARD_BY_DISTRICT } from "../vietnamLocationData";
 import avatarImg from "./anh-gai-2k5.webp";
