@@ -1,126 +1,316 @@
 import { useState } from "react";
-import Header       from "../components/Header";
-import Banner       from "../components/Banner";
+import Header         from "../components/Header";
+import Banner         from "../components/Banner";
 import ProductSection from "../components/ProductSection";
-import NewsPage     from "../components/NewsPage";
-import AboutPage    from "../components/AboutPage";
-import Footer       from "../components/Footer";
-import { phones, ipads, laptops } from "../api/data";
+import NewsPage       from "../components/NewsPage";
+import AboutPage      from "../components/AboutPage";
+import Footer         from "../components/Footer";
+
+import CheckoutPage      from "../components/CheckoutPage";
+import UserProfilePage   from "../components/UserProfilePage";
+import ProductDetailPage from "../components/ProductDetailPage"; // ✅ THÊM
 import "../css/global.css";
+import { useEffect } from "react";
+import {
+  fetchCart,
+  updateCartApi,
+  deleteCartApi,
+  formatPrice1 as formatCartPrice,
+} from "../api/cartApi";
 
-export default function HomePage() {
-  const [activePage, setActivePage] = useState("home");
-  const [cart,       setCart]       = useState([]);
-  const [toast,      setToast]      = useState(null);
+function CartPage({ setActivePage }) {
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Add to cart
-  const handleAddCart = (product) => {
-    setCart((prev) => {
-      const found = prev.find((i) => i.id === product.id);
-      if (found) return prev.map((i) => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { ...product, qty: 1 }];
-    });
-    setToast(`✓ Đã thêm "${product.name}" vào giỏ hàng`);
-    setTimeout(() => setToast(null), 2500);
-  };
+  const formatPrice = (price) => formatCartPrice(price);
+  // =========================
+  // LOAD CART THEO USER LOGIN
+  // =========================
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const data = await fetchCart();
 
-  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+        // Nếu backend trả nested object
+        const mapped = data.map((item) => ({
+          id: item.id,
+          name: item.productColor?.product?.name,
+          price: item.productColor?.product?.price,
+          image: item.productColor?.image
+            ? `http://localhost:8080${item.productColor.image}`
+            : null,
+          qty: item.quantity,
+          description: item.productColor?.product?.description,
+        }));
 
-  // Render content based on page
-  const renderContent = () => {
-    switch (activePage) {
-      case "phone":
-        return (
-          <ProductSection
-            title="ĐIỆN THOẠI"
-            icon="📱"
-            products={phones}
-            onAddCart={handleAddCart}
-          />
-        );
-      case "ipad":
-        return (
-          <ProductSection
-            title="iPAD"
-            icon="📟"
-            products={ipads}
-            onAddCart={handleAddCart}
-          />
-        );
-      case "laptop":
-        return (
-          <ProductSection
-            title="LAPTOP"
-            icon="💻"
-            products={laptops}
-            onAddCart={handleAddCart}
-          />
-        );
-      case "news":
-        return <NewsPage />;
-      case "about":
-        return <AboutPage />;
-      case "cart":
-        return <CartPage cart={cart} setCart={setCart} />;
-      default:
-        // Home - show all sections
-        return (
-          <>
-            <Banner setActivePage={setActivePage} />
-            {/* Quick categories */}
-            <QuickCategories setActivePage={setActivePage} />
-            <ProductSection title="ĐIỆN THOẠI NỔI BẬT" icon="📱" products={phones}  onAddCart={handleAddCart} />
-            <ProductSection title="iPAD BÁN CHẠY"       icon="📟" products={ipads}   onAddCart={handleAddCart} />
-            <ProductSection title="LAPTOP ĐỈNH CAO"      icon="💻" products={laptops} onAddCart={handleAddCart} />
-            <PromoStrip />
-          </>
-        );
-    }
-  };
+        setCart(mapped);
+      } catch (err) {
+        console.error("Lỗi load cart:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCart();
+  }, []);
+
+  const total = cart.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.qty || 1),
+    0
+  );
+
+  if (loading)
+    return (
+      <div style={{ textAlign: "center", padding: "100px 24px" }}>
+        Đang tải giỏ hàng...
+      </div>
+    );
+
+  if (!cart || cart.length === 0)
+    return (
+      <div style={{ textAlign: "center", padding: "100px 24px" }}>
+        <div style={{ fontSize: 72, marginBottom: 20 }}>🛒</div>
+        <div
+          style={{
+            fontFamily: "'Orbitron',monospace",
+            fontSize: 13,
+            color: "#2a2a2a",
+            letterSpacing: 2,
+          }}
+        >
+          GIỎ HÀNG TRỐNG
+        </div>
+      </div>
+    );
 
   return (
-    <div style={{ background: "#070707", minHeight: "100vh" }}>
-      <Header
-        activePage={activePage}
-        setActivePage={setActivePage}
-        cartCount={cartCount}
-      />
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "50px 24px" }}>
+      <h2
+        style={{
+          fontFamily: "'Bebas Neue',cursive",
+          fontSize: 36,
+          letterSpacing: 3,
+          marginBottom: 28,
+          color: "#F0F0F0",
+        }}
+      >
+        GIỎ HÀNG
+      </h2>
 
-      <main>{renderContent()}</main>
+      {cart.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            display: "flex",
+            gap: 14,
+            padding: "15px",
+            border: "1px solid #1e1e1e",
+            borderRadius: 4,
+            marginBottom: 10,
+            background: "#0F0F0F",
+            alignItems: "center",
+          }}
+        >
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "cover",
+                borderRadius: 4,
+              }}
+            />
+          ) : (
+            <span style={{ fontSize: 38 }}>📦</span>
+          )}
 
-      <Footer setActivePage={setActivePage} />
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                fontFamily: "'Rajdhani',sans-serif",
+                fontWeight: 700,
+                fontSize: 15,
+                color: "#F0F0F0",
+              }}
+            >
+              {item.name}
+            </div>
 
-      {/* Toast notification */}
-      {toast && (
-        <div style={toastStyle}>
-          {toast}
+            <div
+              style={{
+                fontFamily: "'Orbitron',monospace",
+                fontSize: 9.5,
+                color: "#444",
+              }}
+            >
+              {item.description}
+            </div>
+          </div>
+
+          <div
+            style={{
+              fontFamily: "'Orbitron',monospace",
+              color: "#E8000D",
+              fontSize: 14,
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {formatPrice(item.price)}
+          </div>
+
+          {/* QTY */}
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <button
+              onClick={async () => {
+                const newQty = Math.max(1, item.qty - 1);
+                await updateCartApi(item.id, newQty);
+
+                setCart((c) =>
+                  c.map((i) =>
+                    i.id === item.id ? { ...i, qty: newQty } : i
+                  )
+                );
+              }}
+              style={qB}
+            >
+              −
+            </button>
+
+            <span
+              style={{
+                fontFamily: "'Orbitron',monospace",
+                fontSize: 13,
+                color: "#F0F0F0",
+                width: 24,
+                textAlign: "center",
+              }}
+            >
+              {item.qty}
+            </span>
+
+            <button
+              onClick={async () => {
+                const newQty = item.qty + 1;
+                await updateCartApi(item.id, newQty);
+
+                setCart((c) =>
+                  c.map((i) =>
+                    i.id === item.id ? { ...i, qty: newQty } : i
+                  )
+                );
+              }}
+              style={qB}
+            >
+              +
+            </button>
+          </div>
+
+          {/* REMOVE */}
+          <button
+            onClick={async () => {
+              await deleteCartApi(item.id);
+              setCart((c) => c.filter((i) => i.id !== item.id));
+            }}
+            style={{ ...qB, borderColor: "#2a2a2a", color: "#555" }}
+          >
+            ✕
+          </button>
         </div>
-      )}
+      ))}
+
+      {/* TOTAL */}
+      <div
+        style={{
+          textAlign: "right",
+          marginTop: 22,
+          padding: "20px",
+          background: "#0F0F0F",
+          border: "1px solid #1e1e1e",
+          borderRadius: 4,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'Orbitron',monospace",
+            fontSize: 11,
+            color: "#444",
+            marginBottom: 6,
+          }}
+        >
+          TỔNG CỘNG
+        </div>
+
+        <div
+          style={{
+            fontFamily: "'Orbitron',monospace",
+            fontSize: 28,
+            color: "#E8000D",
+            fontWeight: 900,
+          }}
+        >
+          {formatPrice(total)}
+        </div>
+
+        <button
+          onClick={() => setActivePage("checkout")}
+          style={{
+            marginTop: 15,
+            background: "linear-gradient(135deg,#E8000D,#8B0000)",
+            border: "none",
+            color: "#fff",
+            fontFamily: "'Orbitron',monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            padding: "13px 38px",
+            borderRadius: 3,
+            cursor: "pointer",
+            boxShadow: "0 6px 22px rgba(232,0,13,.4)",
+          }}
+        >
+          TIẾN HÀNH THANH TOÁN →
+        </button>
+      </div>
     </div>
   );
 }
 
-// ── Quick Categories ────────────────────────────────────────
+const qB = {
+  background: "none",
+  border: "1px solid #E8000D",
+  borderRadius: 3,
+  color: "#E8000D",
+  width: 28,
+  height: 28,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 14,
+  fontWeight: 700,
+};
+
 function QuickCategories({ setActivePage }) {
-  const cats = [
-    { icon: "📱", label: "Điện Thoại", key: "phone",  desc: "iPhone, Samsung, Xiaomi..." },
-    { icon: "📟", label: "iPad",       key: "ipad",   desc: "iPad Pro, Air, Mini..." },
-    { icon: "💻", label: "Laptop",     key: "laptop", desc: "MacBook, ROG, Dell XPS..." },
-    { icon: "📰", label: "Tin Tức",    key: "news",   desc: "Công nghệ mới nhất" },
-  ];
   return (
-    <div style={qc.wrap}>
-      <div style={qc.inner}>
-        {cats.map(({ icon, label, key, desc }, i) => (
-          <button
-            key={key}
-            style={{ ...qc.card, animationDelay: `${i * 0.1}s` }}
-            onClick={() => setActivePage(key)}
-          >
-            <span style={qc.icon}>{icon}</span>
-            <span style={qc.label}>{label}</span>
-            <span style={qc.desc}>{desc}</span>
-            <span style={qc.arrow}>→</span>
+    <div style={{ background:"#0A0A0A", borderBottom:"1px solid #141414", padding:"26px 0" }}>
+      <div style={{ maxWidth:1400, margin:"0 auto", padding:"0 24px", display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:14 }}>
+        {[
+          { icon:"📱", label:"Điện Thoại", key:"phone",  desc:"iPhone, Samsung, Xiaomi..." },
+          { icon:"📟", label:"iPad",       key:"ipad",   desc:"iPad Pro, Air, Mini..."     },
+          { icon:"💻", label:"Laptop",     key:"laptop", desc:"MacBook, ROG, Dell XPS..."  },
+          { icon:"📰", label:"Tin Tức",    key:"news",   desc:"Công nghệ mới nhất"         },
+        ].map(({ icon, label, key, desc }) => (
+          <button key={key} onClick={() => setActivePage(key)}
+            style={{ background:"#111", border:"1px solid #1e1e1e", borderRadius:4, padding:"18px 20px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
+            <span style={{ fontSize:26, flexShrink:0 }}>{icon}</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:14, fontWeight:700, color:"#F0F0F0" }}>{label}</div>
+              <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:"#444" }}>{desc}</div>
+            </div>
+            <span style={{ color:"#E8000D", fontSize:16, fontWeight:700 }}>→</span>
           </button>
         ))}
       </div>
@@ -128,66 +318,16 @@ function QuickCategories({ setActivePage }) {
   );
 }
 
-const qc = {
-  wrap:  { background: "#0A0A0A", borderBottom: "1px solid #161616", padding: "30px 0" },
-  inner: {
-    maxWidth: 1400, margin: "0 auto", padding: "0 24px",
-    display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16,
-  },
-  card: {
-    background:  "#111",
-    border:      "1px solid #1e1e1e",
-    borderRadius: 5,
-    padding:     "20px 24px",
-    cursor:      "pointer",
-    display:     "flex",
-    alignItems:  "center",
-    gap:         14,
-    transition:  "all 0.25s",
-    animation:   "fadeInUp 0.5s ease both",
-    textAlign:   "left",
-  },
-  icon:  { fontSize: 28, flexShrink: 0 },
-  label: {
-    fontFamily: "'Rajdhani', sans-serif",
-    fontSize:   15,
-    fontWeight: 700,
-    color:      "#F0F0F0",
-    display:    "block",
-    lineHeight: 1.2,
-  },
-  desc: {
-    fontFamily: "'Rajdhani', sans-serif",
-    fontSize:   11,
-    color:      "#555",
-    display:    "block",
-  },
-  arrow: {
-    marginLeft: "auto",
-    color:      "#E8000D",
-    fontSize:   18,
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-};
-
-// ── Promo Strip ─────────────────────────────────────────────
 function PromoStrip() {
   return (
-    <div style={ps.wrap}>
-      <div style={ps.inner}>
-        {[
-          { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Đơn từ 500.000đ" },
-          { icon: "🔄", title: "Đổi trả 30 ngày",     desc: "Không cần lý do" },
-          { icon: "🛡️", title: "Bảo hành 24 tháng",   desc: "Tại 50+ trung tâm" },
-          { icon: "💳", title: "Trả góp 0%",           desc: "Lên đến 24 tháng" },
-          { icon: "📞", title: "Hỗ trợ 24/7",          desc: "1800 6789 miễn phí" },
-        ].map(({ icon, title, desc }) => (
-          <div key={title} style={ps.item}>
-            <span style={ps.icon}>{icon}</span>
+    <div style={{ background:"#0D0000", borderTop:"1px solid rgba(232,0,13,0.15)", borderBottom:"1px solid rgba(232,0,13,0.15)", padding:"22px 0", marginTop:50 }}>
+      <div style={{ maxWidth:1400, margin:"0 auto", padding:"0 24px", display:"flex", flexWrap:"wrap", gap:18, justifyContent:"space-between" }}>
+        {[["🚚","Miễn phí vận chuyển","Đơn từ 500.000đ"],["🔄","Đổi trả 30 ngày","Không cần lý do"],["🛡️","Bảo hành 24 tháng","50+ trung tâm"],["💳","Trả góp 0%","Lên đến 24 tháng"],["📞","Hỗ trợ 24/7","1800 6789 miễn phí"]].map(([icon,title,desc]) => (
+          <div key={title} style={{ display:"flex", alignItems:"center", gap:11, flex:"1 1 150px" }}>
+            <span style={{ fontSize:26, flexShrink:0 }}>{icon}</span>
             <div>
-              <div style={ps.title}>{title}</div>
-              <div style={ps.desc}>{desc}</div>
+              <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:13.5, fontWeight:700, color:"#F0F0F0" }}>{title}</div>
+              <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:11, color:"#444" }}>{desc}</div>
             </div>
           </div>
         ))}
@@ -196,75 +336,81 @@ function PromoStrip() {
   );
 }
 
-const ps = {
-  wrap:  { background: "#0D0000", borderTop: "1px solid rgba(232,0,13,0.15)", borderBottom: "1px solid rgba(232,0,13,0.15)", padding: "24px 0", marginTop: 50 },
-  inner: { maxWidth: 1400, margin: "0 auto", padding: "0 24px", display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between" },
-  item:  { display: "flex", alignItems: "center", gap: 12, flex: "1 1 160px" },
-  icon:  { fontSize: 28, flexShrink: 0 },
-  title: { fontFamily: "'Rajdhani',sans-serif", fontSize: 14, fontWeight: 700, color: "#F0F0F0" },
-  desc:  { fontFamily: "'Rajdhani',sans-serif", fontSize: 11, color: "#555" },
-};
+export default function HomePage() {
+  const [activePage, setActivePage] = useState("home");
+  const [cart,       setCart]       = useState([]);
+  const [toast,      setToast]      = useState(null);
 
-// ── Cart Page ───────────────────────────────────────────────
-function CartPage({ cart, setCart }) {
-  const { formatPrice } = require("../api/data");
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const handleAddCart = (product) => {
+    setCart((prev) => {
+      const found = prev.find((i) => i.id === product.id);
+      if (found) return prev.map((i) => i.id===product.id ? {...i, qty:i.qty+1} : i);
+      return [...prev, { ...product, qty:1 }];
+    });
+    setToast(`✓ Đã thêm "${product.name}" vào giỏ hàng`);
+    setTimeout(() => setToast(null), 2500);
+  };
 
-  if (cart.length === 0) return (
-    <div style={{ textAlign: "center", padding: "100px 24px" }}>
-      <div style={{ fontSize: 72, marginBottom: 20 }}>🛒</div>
-      <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 14, color: "#333", letterSpacing: 2 }}>GIỎ HÀNG TRỐNG</div>
-    </div>
-  );
+  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+
+  const renderContent = () => {
+    // ✅ THÊM: xử lý route detail-{id} TRƯỚC switch
+    if (activePage?.startsWith("detail-")) {
+      const productId = activePage.replace("detail-", "");
+      return (
+        <ProductDetailPage
+          productId={productId}
+          setActivePage={setActivePage}
+          onAddCart={handleAddCart}
+        />
+      );
+    }
+
+    switch (activePage) {
+      // key "phone" → data.js map → "Điện Thoại" → gửi lên API
+      case "phone":
+        return <ProductSection title="ĐIỆN THOẠI" icon="📱" category="phone"  onAddCart={handleAddCart} setActivePage={setActivePage} />; // ✅ thêm setActivePage
+      // key "ipad" → data.js map → "Ipad" → gửi lên API
+      case "ipad":
+        return <ProductSection title="iPAD"       icon="📟" category="ipad"   onAddCart={handleAddCart} setActivePage={setActivePage} />; // ✅ thêm setActivePage
+      // key "laptop" → data.js map → "Laptop" → gửi lên API
+      case "laptop":
+        return <ProductSection title="LAPTOP"     icon="💻" category="laptop" onAddCart={handleAddCart} setActivePage={setActivePage} />; // ✅ thêm setActivePage
+      case "news":  return <NewsPage />;
+      case "about": return <AboutPage />;
+      case "cart":  return <CartPage cart={cart} setCart={setCart} setActivePage={setActivePage} />;
+      case "checkout":
+        return <CheckoutPage cart={cart} setActivePage={setActivePage} />;
+
+      // ── Trang tài khoản / profile ─────────────────────────
+      case "profile":
+        return <UserProfilePage setActivePage={setActivePage} />;
+
+      default:
+        return (
+          <>
+            <Banner setActivePage={setActivePage} />
+            <QuickCategories setActivePage={setActivePage} />
+            {/* ✅ thêm setActivePage vào 3 dòng này */}
+            <ProductSection title="ĐIỆN THOẠI NỔI BẬT" icon="📱" category="phone"  onAddCart={handleAddCart} setActivePage={setActivePage} />
+            <ProductSection title="iPAD BÁN CHẠY"       icon="📟" category="ipad"   onAddCart={handleAddCart} setActivePage={setActivePage} />
+            <ProductSection title="LAPTOP ĐỈNH CAO"      icon="💻" category="laptop" onAddCart={handleAddCart} setActivePage={setActivePage} />
+            <PromoStrip />
+          </>
+        );
+    }
+  };
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "50px 24px" }}>
-      <h2 style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 36, letterSpacing: 3, marginBottom: 28, color: "#F0F0F0" }}>GIỎ HÀNG</h2>
-      {cart.map((item) => (
-        <div key={item.id} style={{ display: "flex", gap: 16, padding: "16px", border: "1px solid #1e1e1e", borderRadius: 4, marginBottom: 12, background: "#0F0F0F", alignItems: "center" }}>
-          <span style={{ fontSize: 40 }}>{item.image}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 700, fontSize: 15, color: "#F0F0F0" }}>{item.name}</div>
-            <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 10, color: "#555" }}>{item.specs}</div>
-          </div>
-          <div style={{ fontFamily: "'Orbitron',monospace", color: "#E8000D", fontSize: 14, fontWeight: 700 }}>{formatPrice(item.price)}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={() => setCart(c => c.map(i => i.id === item.id ? { ...i, qty: Math.max(1, i.qty - 1) } : i))} style={{ ...qtyBtn, borderColor: "#E8000D", color: "#E8000D" }}>−</button>
-            <span style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, color: "#F0F0F0", width: 24, textAlign: "center" }}>{item.qty}</span>
-            <button onClick={() => setCart(c => c.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i))} style={{ ...qtyBtn, borderColor: "#E8000D", color: "#E8000D" }}>+</button>
-          </div>
-          <button onClick={() => setCart(c => c.filter(i => i.id !== item.id))} style={{ ...qtyBtn, borderColor: "#333", color: "#666" }}>✕</button>
+    <div style={{ background:"#070707", minHeight:"100vh" }}>
+      <Header activePage={activePage} setActivePage={setActivePage} cartCount={cartCount} />
+      <main>{renderContent()}</main>
+      <Footer setActivePage={setActivePage} />
+      {toast && (
+        <div style={{ position:"fixed", bottom:28, right:28, background:"#0F0F0F", border:"1px solid #E8000D", borderLeft:"4px solid #E8000D", color:"#F0F0F0", fontFamily:"'Rajdhani',sans-serif", fontSize:14, fontWeight:600, padding:"13px 20px", borderRadius:4, boxShadow:"0 8px 28px rgba(232,0,13,0.28)", zIndex:9999, animation:"fadeInUp 0.3s ease both", maxWidth:370 }}>
+          {toast}
         </div>
-      ))}
-      <div style={{ textAlign: "right", marginTop: 24, padding: "20px", background: "#0F0F0F", border: "1px solid #1e1e1e", borderRadius: 4 }}>
-        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 12, color: "#666", marginBottom: 8 }}>TỔNG CỘNG</div>
-        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 28, color: "#E8000D", fontWeight: 900 }}>{formatPrice(total)}</div>
-        <button style={{ marginTop: 16, background: "#E8000D", border: "none", color: "#fff", fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, padding: "14px 40px", borderRadius: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(232,0,13,0.4)" }}>
-          THANH TOÁN NGAY →
-        </button>
-      </div>
+      )}
     </div>
   );
 }
-const qtyBtn = { background: "none", border: "1px solid", borderRadius: 3, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, transition: "all 0.2s" };
-
-// ── Toast style ─────────────────────────────────────────────
-const toastStyle = {
-  position:      "fixed",
-  bottom:        30,
-  right:         30,
-  background:    "#0F0F0F",
-  border:        "1px solid #E8000D",
-  borderLeft:    "4px solid #E8000D",
-  color:         "#F0F0F0",
-  fontFamily:    "'Rajdhani', sans-serif",
-  fontSize:      14,
-  fontWeight:    600,
-  padding:       "14px 22px",
-  borderRadius:  4,
-  boxShadow:     "0 8px 30px rgba(232,0,13,0.3)",
-  zIndex:        9999,
-  animation:     "fadeInUp 0.3s ease both",
-  maxWidth:      380,
-  letterSpacing: 0.3,
-};

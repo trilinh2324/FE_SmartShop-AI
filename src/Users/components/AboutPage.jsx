@@ -1,16 +1,15 @@
 export default function AboutPage() {
   const team = [
-    { name: "Nguyễn Văn An", role: "CEO & Founder", emoji: "👨‍💼" },
-    { name: "Trần Thị Bình", role: "CTO",            emoji: "👩‍💻" },
-    { name: "Lê Minh Cường", role: "Head of Sales",  emoji: "👨‍💻" },
-    { name: "Phạm Thu Hà",   role: "Marketing",      emoji: "👩‍🎨" },
+    { name: "Lê Trí Linh", role: "CEO & Founder", emoji: "👨‍💼" },
+    { name: "Nguyễn Minh Đức", role: "CTO",            emoji: "👩‍💻" },
+    { name: "Vũ Thị Trà My", role: "Head of Sales",  emoji: "👨‍💻" },
   ];
 
   const milestones = [
-    { year: "2018", text: "Thành lập TechZone với 1 cửa hàng nhỏ tại TP.HCM" },
-    { year: "2020", text: "Mở rộng lên 10 chi nhánh toàn quốc" },
-    { year: "2022", text: "Đạt 100.000 khách hàng, ra mắt website thương mại điện tử" },
-    { year: "2024", text: "Top 3 chuỗi bán lẻ công nghệ uy tín nhất Việt Nam" },
+    { year: "2022", text: "Thành lập SmartShop với 1 cửa hàng nhỏ tại Thủ Đô Hà Nội" },
+    { year: "2023", text: "Mở rộng lên 10 chi nhánh toàn quốc" },
+    { year: "2024", text: "Đạt 100.000 khách hàng, ra mắt website thương mại điện tử" },
+    { year: "2025", text: "Top 3 chuỗi bán lẻ công nghệ uy tín nhất Việt Nam" },
     { year: "2026", text: "500.000+ khách hàng trên toàn quốc" },
   ];
 
@@ -23,7 +22,7 @@ export default function AboutPage() {
           <div style={s.heroOverlay} />
           <div style={s.heroContent}>
             <div style={s.heroSub}>CHÚNG TÔI LÀ AI?</div>
-            <h1 style={s.heroTitle}>TECH<span style={{ color: "#E8000D" }}>ZONE</span></h1>
+            <h1 style={s.heroTitle}>SMART<span style={{ color: "#E8000D" }}>SHOP</span></h1>
             <p style={s.heroDesc}>
               Hơn 8 năm kinh nghiệm trong lĩnh vực phân phối thiết bị công nghệ chính hãng.
               Chúng tôi cam kết mang đến sản phẩm tốt nhất với dịch vụ hoàn hảo nhất.

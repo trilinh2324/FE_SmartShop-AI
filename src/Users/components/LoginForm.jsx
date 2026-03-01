@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../css/LoginForm.css';
+import { Link } from "react-router-dom";
 
-const LockIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-  </svg>
-);
+// const LockIcon = () => (
+//   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+//     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+//     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+//   </svg>
+// );
 
 const EyeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -153,8 +154,9 @@ export default function LoginForm() {
               />
               <span>Ghi nhớ đăng nhập</span>
             </label>
-            <a href="#" className="need-help-link">Quên mật khẩu?</a>
-          </div>
+<Link to="/users/forgot-password" className="need-help-link">
+  Quên mật khẩu?
+</Link>          </div>
         </form>
 
         <div className="form-divider">

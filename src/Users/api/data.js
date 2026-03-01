@@ -1,287 +1,70 @@
-// ============================================================
-// API DATA - TechZone Store
-// ============================================================
+const BASE_URL = "http://localhost:8080/api/user/products";
 
-export const phones = [
-  {
-    id: 1,
-    name: "iPhone 16 Pro Max",
-    price: 34990000,
-    oldPrice: 39990000,
-    tag: "HOT",
-    specs: "256GB | Titanium Black",
-    category: "phone",
-    image: "📱",
-    rating: 4.9,
-    sold: 1240,
-    description: "Chip A18 Pro, Camera 48MP, Màn hình 6.9 inch Super Retina XDR",
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S25 Ultra",
-    price: 29990000,
-    oldPrice: 34990000,
-    tag: "NEW",
-    specs: "512GB | Phantom Black",
-    category: "phone",
-    image: "📱",
-    rating: 4.8,
-    sold: 987,
-    description: "Snapdragon 8 Elite, Camera 200MP, Bút S Pen tích hợp AI",
-  },
-  {
-    id: 3,
-    name: "Xiaomi 14 Ultra",
-    price: 22990000,
-    oldPrice: 26990000,
-    tag: "SALE",
-    specs: "512GB | Black",
-    category: "phone",
-    image: "📱",
-    rating: 4.7,
-    sold: 654,
-    description: "Camera Leica 1 inch, Snapdragon 8 Gen 3, Sạc 90W",
-  },
-  {
-    id: 4,
-    name: "OPPO Find X8 Pro",
-    price: 19990000,
-    oldPrice: 23990000,
-    tag: "",
-    specs: "256GB | Midnight Black",
-    category: "phone",
-    image: "📱",
-    rating: 4.6,
-    sold: 432,
-    description: "Camera Hasselblad, Dimensity 9400, Sạc 80W SUPERVOOC",
-  },
-  {
-    id: 5,
-    name: "OnePlus 13",
-    price: 17490000,
-    oldPrice: 20990000,
-    tag: "SALE",
-    specs: "512GB | Black Eclipse",
-    category: "phone",
-    image: "📱",
-    rating: 4.7,
-    sold: 321,
-    description: "Snapdragon 8 Elite, Camera Hasselblad, Sạc 100W SUPERVOOC",
-  },
-  {
-    id: 6,
-    name: "Google Pixel 9 Pro",
-    price: 21990000,
-    oldPrice: 25990000,
-    tag: "NEW",
-    specs: "256GB | Obsidian",
-    category: "phone",
-    image: "📱",
-    rating: 4.8,
-    sold: 280,
-    description: "Google AI tích hợp sâu, Camera 50MP, Tensor G4",
-  },
-];
+export const formatPrice = (price) => {
+  const value = Number(price);
+  if (!value || isNaN(value)) return "0đ";
+  return value.toLocaleString("vi-VN") + "đ";
+};
 
-export const ipads = [
-  {
-    id: 7,
-    name: 'iPad Pro M4 13"',
-    price: 39990000,
-    oldPrice: 45990000,
-    tag: "NEW",
-    specs: "256GB WiFi | Space Black",
-    category: "ipad",
-    image: "📟",
-    rating: 4.9,
-    sold: 876,
-    description: "Chip M4, Màn hình OLED 13 inch, Mỏng nhất từ trước đến nay",
-  },
-  {
-    id: 8,
-    name: 'iPad Air M2 11"',
-    price: 18990000,
-    oldPrice: 22990000,
-    tag: "HOT",
-    specs: "128GB WiFi | Midnight",
-    category: "ipad",
-    image: "📟",
-    rating: 4.8,
-    sold: 643,
-    description: "Chip M2, Màn hình Liquid Retina 11 inch, Apple Pencil USB-C",
-  },
-  {
-    id: 9,
-    name: "iPad Mini 7",
-    price: 14990000,
-    oldPrice: 17990000,
-    tag: "SALE",
-    specs: "128GB WiFi | Space Gray",
-    category: "ipad",
-    image: "📟",
-    rating: 4.7,
-    sold: 421,
-    description: "Chip A17 Pro, Màn hình 8.3 inch, nhỏ gọn dễ mang theo",
-  },
-  {
-    id: 10,
-    name: "iPad Gen 10",
-    price: 11990000,
-    oldPrice: 13990000,
-    tag: "",
-    specs: "64GB WiFi | Silver",
-    category: "ipad",
-    image: "📟",
-    rating: 4.5,
-    sold: 387,
-    description: "Chip A14 Bionic, Màn hình 10.9 inch, USB-C, giá tốt nhất",
-  },
-  {
-    id: 11,
-    name: 'iPad Pro M4 11"',
-    price: 29990000,
-    oldPrice: 34990000,
-    tag: "NEW",
-    specs: "512GB WiFi+5G | Black",
-    category: "ipad",
-    image: "📟",
-    rating: 4.9,
-    sold: 234,
-    description: "Chip M4, OLED 11 inch, 5G, Apple Pencil Pro",
-  },
-  {
-    id: 12,
-    name: 'iPad Air M2 13"',
-    price: 23990000,
-    oldPrice: 27990000,
-    tag: "HOT",
-    specs: "256GB WiFi | Midnight",
-    category: "ipad",
-    image: "📟",
-    rating: 4.8,
-    sold: 198,
-    description: "Chip M2, Màn hình lớn 13 inch, hiệu năng mạnh mẽ",
-  },
-];
+export const formatPrice1 = (price) => {
+  const value = Number(price);
+  if (!value || isNaN(value)) return "0đ";
+  return value.toLocaleString("vi-VN") + "đ";
+};
+export const getDiscount = (price, oldPrice) => {
+  if (!oldPrice || oldPrice <= price) return 0;
+  return Math.round((1 - price / oldPrice) * 100);
+};
 
-export const laptops = [
-  {
-    id: 13,
-    name: 'MacBook Pro M4 14"',
-    price: 52990000,
-    oldPrice: 59990000,
-    tag: "NEW",
-    specs: "16GB RAM | 512GB | Space Black",
-    category: "laptop",
-    image: "💻",
-    rating: 4.9,
-    sold: 543,
-    description: "Chip M4, màn hình Liquid Retina XDR 14 inch, 22 giờ pin",
-  },
-  {
-    id: 14,
-    name: 'MacBook Air M3 15"',
-    price: 38990000,
-    oldPrice: 44990000,
-    tag: "HOT",
-    specs: "8GB RAM | 256GB | Midnight",
-    category: "laptop",
-    image: "💻",
-    rating: 4.8,
-    sold: 721,
-    description: "Chip M3, không quạt tản nhiệt, màn hình 15 inch siêu mỏng",
-  },
-  {
-    id: 15,
-    name: "ASUS ROG Zephyrus G16",
-    price: 49990000,
-    oldPrice: 55990000,
-    tag: "GAMING",
-    specs: "RTX4090 | 32GB | 2TB | Black",
-    category: "laptop",
-    image: "💻",
-    rating: 4.9,
-    sold: 312,
-    description: "RTX 4090, AMD Ryzen 9, màn hình 240Hz QHD+, RGB per-key",
-  },
-  {
-    id: 16,
-    name: "Dell XPS 15 9530",
-    price: 44990000,
-    oldPrice: 50990000,
-    tag: "SALE",
-    specs: "RTX4060 | 16GB | 1TB | Graphite",
-    category: "laptop",
-    image: "💻",
-    rating: 4.7,
-    sold: 287,
-    description: "Intel Core i9, RTX 4060, màn hình OLED 3.5K chuẩn màu",
-  },
-  {
-    id: 17,
-    name: "Lenovo ThinkPad X1 Carbon",
-    price: 39990000,
-    oldPrice: 45990000,
-    tag: "",
-    specs: "Intel i7 | 32GB | 1TB | Black",
-    category: "laptop",
-    image: "💻",
-    rating: 4.8,
-    sold: 198,
-    description: "Intel Core i7 Gen 13, siêu mỏng nhẹ 1.12kg, chuẩn MIL-SPEC",
-  },
-  {
-    id: 18,
-    name: "HP Spectre x360 14",
-    price: 36990000,
-    oldPrice: 42990000,
-    tag: "NEW",
-    specs: "Intel i7 | 16GB | 1TB | Nightfall",
-    category: "laptop",
-    image: "💻",
-    rating: 4.7,
-    sold: 165,
-    description: "2-in-1 xoay gập, OLED 2.8K cảm ứng, Intel Core Ultra 7",
-  },
-];
+const CATEGORY_MAP = {
+  phone: "Điện Thoại",
+  ipad: "Ipad",
+  laptop: "Laptop",
+};
+
+export const fetchAllProducts = async () => {
+  try {
+    const res = await fetch(BASE_URL);
+    if (!res.ok) throw new Error("Lỗi server");
+    return await res.json();
+  } catch (err) {
+    console.error("fetchAllProducts:", err);
+    return [];
+  }
+};
+
+export const fetchProductsByCategory = async (categoryKey) => {
+  try {
+    const dbName = CATEGORY_MAP[categoryKey] ?? categoryKey;
+
+    const url = `${BASE_URL}/category/${encodeURIComponent(dbName)}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Lỗi server");
+
+    return await res.json();
+  } catch (err) {
+    console.error("fetchProductsByCategory:", err);
+    return [];
+  }
+};
+
+export const fetchProductById = async (id) => {
+  try {
+    const res = await fetch(`${BASE_URL}/${id}`);
+    if (!res.ok) throw new Error("Không tìm thấy");
+    return await res.json();
+  } catch (err) {
+    console.error("fetchProductById:", err);
+    return null;
+  }
+};
+
+
 
 export const news = [
-  {
-    id: 1,
-    title: "iPhone 17 Series: Rò rỉ thiết kế hoàn toàn mới với camera AI siêu khủng",
-    date: "28/02/2026",
-    cat: "TIN TỨC",
-    summary: "Apple đang chuẩn bị ra mắt iPhone 17 với thiết kế đột phá hoàn toàn, tích hợp AI camera thế hệ mới...",
-    emoji: "📱",
-  },
-  {
-    id: 2,
-    title: "Samsung Galaxy S26 Ultra sẽ có chip Snapdragon 8 Elite Gen 2 mạnh nhất",
-    date: "27/02/2026",
-    cat: "CÔNG NGHỆ",
-    summary: "Samsung xác nhận Galaxy S26 Ultra sẽ sử dụng chip Snapdragon 8 Elite Gen 2, hiệu năng tăng 40%...",
-    emoji: "📟",
-  },
-  {
-    id: 3,
-    title: "MacBook Pro M5: Apple sắp ra mắt với hiệu năng tăng gấp 3 lần thế hệ trước",
-    date: "26/02/2026",
-    cat: "LAPTOP",
-    summary: "Chip M5 của Apple hứa hẹn cách mạng hóa hiệu năng xử lý AI, tốc độ GPU tăng đáng kinh ngạc...",
-    emoji: "💻",
-  },
-  {
-    id: 4,
-    title: "iPad Pro 2026 tích hợp màn hình gập - Cuộc cách mạng của tablet",
-    date: "25/02/2026",
-    cat: "IPAD",
-    summary: "Apple lần đầu tiên thử nghiệm iPad Pro với màn hình gập OLED, sẽ ra mắt cuối năm 2026...",
-    emoji: "📟",
-  },
+  { id:1, title:"iPhone 17 Series: Rò rỉ thiết kế hoàn toàn mới với camera AI siêu khủng",       date:"28/02/2026", cat:"TIN TỨC",   emoji:"📱", summary:"Apple chuẩn bị ra mắt iPhone 17 với thiết kế đột phá, tích hợp AI camera thế hệ mới nhất..." },
+  { id:2, title:"Samsung Galaxy S26 Ultra: Snapdragon 8 Elite Gen 2 mạnh nhất từ trước đến nay",  date:"27/02/2026", cat:"CÔNG NGHỆ", emoji:"📱", summary:"Samsung xác nhận Galaxy S26 Ultra dùng Snapdragon 8 Elite Gen 2, hiệu năng tăng 40%..." },
+  { id:3, title:"MacBook Pro M5: Hiệu năng tăng gấp 3 lần thế hệ trước",                          date:"26/02/2026", cat:"LAPTOP",    emoji:"💻", summary:"Chip M5 của Apple hứa hẹn cách mạng hóa hiệu năng AI, tốc độ GPU tăng đáng kinh ngạc..." },
+  { id:4, title:"iPad Pro 2026 tích hợp màn hình gập - Cuộc cách mạng của tablet",                date:"25/02/2026", cat:"IPAD",      emoji:"📟", summary:"Apple lần đầu thử nghiệm iPad Pro màn hình gập OLED, dự kiến ra mắt cuối năm 2026..." },
 ];
-
-export const formatPrice = (price) =>
-  price.toLocaleString("vi-VN") + "đ";
-
-export const getDiscount = (price, oldPrice) =>
-  Math.round((1 - price / oldPrice) * 100);

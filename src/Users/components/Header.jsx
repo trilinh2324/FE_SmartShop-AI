@@ -152,7 +152,11 @@ export default function Header({ activePage, setActivePage, cartCount }) {
               )}
             </button>
 
-            <button style={iconBtn}>👤</button>
+            <button onClick={() => setActivePage("profile")} title="Tài khoản"
+              style={{ ...iconBtn, background:activePage==="profile"?"rgba(232,0,13,.1)":"none", borderColor:activePage==="profile"?"#E8000D":"#2a2a2a", color:activePage==="profile"?"#E8000D":"#aaa" }}>
+              👤
+            </button>
+
 
             <div style={{ paddingLeft: 10, borderLeft: "1px solid #222" }}>
               <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 7, color: "#444", letterSpacing: 1.5 }}>Hotline</div>
