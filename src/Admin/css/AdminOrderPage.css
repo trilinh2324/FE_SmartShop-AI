@@ -1,181 +1,308 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: system-ui, sans-serif;
-}
+/* ============================================================
+   AdminOrderPage.css
+   TẤT CẢ selector bắt đầu bằng .admin-wrapper
+   → KHÔNG ảnh hưởng bất kỳ trang nào khác
+   ============================================================ */
 
 .admin-wrapper {
   display: flex;
   min-height: 100vh;
+  font-family: system-ui, sans-serif;
 }
 
-/* ===== SIDEBAR ===== */
-.sidebar {
-  width: 260px;
+/* ===== SIDEBAR fixed bên trái ===== */
+.admin-wrapper .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
   background: linear-gradient(180deg, #0f172a, #0b1120);
   color: #fff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 20px;
-  transition: 0.3s;
+  padding: 24px 16px;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform 0.3s;
 }
 
-.logo {
+@media (min-width: 769px) {
+  .admin-wrapper .sidebar {
+    transform: translateX(0) !important;
+  }
+}
+
+.admin-wrapper .sidebar .logo {
   text-align: center;
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 800;
   color: #ef4444;
-  margin-bottom: 30px;
-  letter-spacing: 2px;
+  margin-bottom: 32px;
+  letter-spacing: 3px;
 }
 
-.sidebar nav {
+.admin-wrapper .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
-.sidebar nav a {
+.admin-wrapper .sidebar nav a {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
   text-decoration: none;
-  color: #cbd5e1;
-  transition: 0.3s;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
 }
 
-.sidebar nav a:hover {
-  background: rgba(255, 255, 255, 0.08);
+.admin-wrapper .sidebar nav a:hover {
+  background: rgba(255,255,255,0.07);
   color: #fff;
 }
 
-.sidebar nav a.active {
+.admin-wrapper .sidebar nav a.active {
   background: #dc2626;
   color: #fff;
 }
 
-.logout {
+.admin-wrapper .sidebar .logout {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #111827;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #1e293b;
   cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+  border: none;
+  width: 100%;
+  text-align: left;
 }
 
-.logout:hover {
+.admin-wrapper .sidebar .logout:hover {
   background: #dc2626;
+  color: #fff;
 }
 
-/* ===== MAIN ===== */
-.main {
+/* ===== MAIN đẩy sang phải 240px ===== */
+.admin-wrapper .main {
+  margin-left: 240px;
   flex: 1;
+  min-width: 0;
   background: #f1f5f9;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-.topbar {
+.admin-wrapper .topbar {
   height: 60px;
   background: #fff;
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  justify-content: space-between;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  gap: 16px;
+  padding: 0 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-.menu-btn {
+.admin-wrapper .topbar h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.admin-wrapper .menu-btn {
   display: none;
   background: none;
   border: none;
   cursor: pointer;
+  color: #475569;
+  padding: 4px;
+  border-radius: 6px;
 }
 
-.admin-order {
-  padding: 25px;
+.admin-wrapper .menu-btn:hover { background: #f1f5f9; }
+
+/* ===== ORDER CONTENT ===== */
+.admin-wrapper .admin-order {
+  padding: 28px;
+  flex: 1;
 }
 
-.order-filter {
-  margin-bottom: 20px;
+.admin-wrapper .order-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  background: #fff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-.order-filter select {
-  padding: 6px 10px;
-  margin-left: 10px;
+.admin-wrapper .order-filter label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
 }
 
-.table-wrapper {
+.admin-wrapper .order-filter select {
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #334155;
+  background: #f8fafc;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 160px;
+}
+
+.admin-wrapper .order-filter select:focus { border-color: #dc2626; }
+
+.admin-wrapper .loading-text {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.admin-wrapper .table-wrapper {
   overflow-x: auto;
-}
-
-.order-table {
-  width: 100%;
-  border-collapse: collapse;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
   background: #fff;
 }
 
-.order-table th,
-.order-table td {
-  padding: 12px;
-  border: 1px solid #eee;
-  text-align: center;
+.admin-wrapper .order-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
 }
 
-.order-table th {
+.admin-wrapper .order-table th {
   background: #1e293b;
-  color: #fff;
+  color: #e2e8f0;
+  padding: 13px 16px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
 }
 
-.status {
-  padding: 5px 10px;
+.admin-wrapper .order-table th:first-child { border-radius: 12px 0 0 0; }
+.admin-wrapper .order-table th:last-child  { border-radius: 0 12px 0 0; }
+
+.admin-wrapper .order-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: center;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.admin-wrapper .order-table tbody tr:hover { background: #f8fafc; }
+.admin-wrapper .order-table tbody tr:last-child td { border-bottom: none; }
+
+/* Status badges */
+.admin-wrapper .status {
+  display: inline-block;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700;
   color: #fff;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
-.status.pending_confirmation {
-  background: orange;
-}
-.status.confirmed {
-  background: #3498db;
-}
-.status.shipping {
-  background: #9b59b6;
-}
-.status.completed {
-  background: #27ae60;
-}
-.status.cancelled {
-  background: #e74c3c;
+.admin-wrapper .status.pending_confirmation { background: #f59e0b; }
+.admin-wrapper .status.confirmed            { background: #3b82f6; }
+.admin-wrapper .status.shipping             { background: #8b5cf6; }
+.admin-wrapper .status.completed            { background: #10b981; }
+.admin-wrapper .status.cancelled            { background: #ef4444; }
+
+/* Actions */
+.admin-wrapper .actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.empty {
-  padding: 20px;
-  font-weight: bold;
+.admin-wrapper .view-btn {
+  padding: 6px 14px;
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.admin-wrapper .view-btn:hover { background: #dc2626; }
+
+.admin-wrapper .actions select {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #334155;
+  background: #f8fafc;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.admin-wrapper .actions select:focus { border-color: #dc2626; }
+
+.admin-wrapper .empty {
+  padding: 48px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 15px;
+  font-style: italic;
 }
 
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    left: -260px;
-    top: 0;
-    height: 100%;
+  .admin-wrapper .sidebar {
+    transform: translateX(-100%);
     z-index: 1000;
   }
 
-  .sidebar.open {
-    left: 0;
+  .admin-wrapper .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
   }
 
-  .menu-btn {
-    display: block;
+  .admin-wrapper .main {
+    margin-left: 0;
   }
+
+  .admin-wrapper .menu-btn { display: block; }
+
+  .admin-wrapper .admin-order { padding: 16px; }
+
+  .admin-wrapper .order-filter { flex-wrap: wrap; }
 }

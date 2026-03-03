@@ -16,10 +16,6 @@ import AdminOrderPage from "./Admin/pages/oders/AdminOrderPage";
 import AdminOrderDetailPage from "./Admin/pages/oders/AdminOrderDetailPage";
 import NewsDetail from "./Admin/pages/News/NewsDetail";
 // import OAuth2Redirect from "./Users/Auth/OAuth2Redirect";
-
-
-
-
 import HomePage from "./Users/pages/HomePage";
 import LoginForm from "./Users/components/LoginForm";
 import RegisterForm from "./Users/components/RegisterForm";
