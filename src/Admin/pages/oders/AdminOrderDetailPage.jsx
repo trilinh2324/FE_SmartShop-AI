@@ -58,7 +58,7 @@ export default function AdminOrderDetailPage() {
           <p><strong>Người nhận:</strong> {order.recipientName}</p>
           <p><strong>SĐT:</strong> {order.recipientPhone}</p>
           <p><strong>Email:</strong> {order.recipientEmail}</p>
-          <p><strong>Địa chỉ:</strong> {order.recipientAddress}</p>
+          <p><strong>Địa chỉ:</strong> {order.recipientAddress} ,{order.selectedDistrict} ,{order.selectedProvince} ,{order.selectedCountry}</p>
         </div>
 
         <div className="info-right">

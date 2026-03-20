@@ -1,3 +1,6 @@
+// Header.jsx – KHÔNG cần API search riêng
+// Chỉ gọi onSearch(keyword) → HomePage xử lý
+
 import { useState, useEffect } from "react";
 
 const NAV_ITEMS = [
@@ -8,7 +11,13 @@ const NAV_ITEMS = [
   { label: "Giới Thiệu", key: "about",  icon: "ℹ️"  },
 ];
 
-export default function Header({ activePage, setActivePage, cartCount }) {
+const iconBtn = {
+  background: "none", border: "1px solid #2a2a2a", color: "#aaa",
+  fontSize: 15, width: 35, height: 35, borderRadius: 3, cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+};
+
+export default function Header({ activePage, setActivePage, cartCount, onSearch }) {
   const [scrolled,    setScrolled]    = useState(false);
   const [searchOpen,  setSearchOpen]  = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -19,54 +28,57 @@ export default function Header({ activePage, setActivePage, cartCount }) {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  const handleSearch = () => {
+    const kw = searchValue.trim();
+    onSearch(kw);
+    setSearchOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter")  handleSearch();
+    if (e.key === "Escape") setSearchOpen(false);
+  };
+
+  const handleChange = (e) => {
+    setSearchValue(e.target.value);
+    if (e.target.value === "") onSearch(""); // xoá hết → reset
+  };
+
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap');
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes spin    { to { transform: rotate(360deg); } }
+      `}</style>
+
       {/* Announcement */}
       <div style={{
         background: "linear-gradient(90deg,#8B0000,#E8000D,#8B0000)",
-        backgroundSize: "200% 100%",
-        animation: "shimmer 3s linear infinite",
-        padding: "7px 16px",
-        textAlign: "center",
-        fontSize: 12,
-        fontFamily: "'Rajdhani',sans-serif",
-        fontWeight: 600,
-        letterSpacing: 0.8,
-        color: "#fff",
+        backgroundSize: "200% 100%", animation: "shimmer 3s linear infinite",
+        padding: "7px 16px", textAlign: "center", fontSize: 12,
+        fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, letterSpacing: 0.8, color: "#fff",
       }}>
         🔥 FLASH SALE — Giảm đến <b>40%</b> &nbsp;|&nbsp; Free ship cho hội viên &nbsp;|&nbsp; Bảo hành 24 tháng chính hãng
       </div>
 
-      {/* Header */}
       <header style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
+        position: "sticky", top: 0, zIndex: 1000,
         background: scrolled ? "rgba(7,7,7,0.97)" : "#0F0F0F",
         borderBottom: "2px solid #E8000D",
         boxShadow: scrolled ? "0 4px 28px rgba(232,0,13,0.25)" : "none",
         transition: "all 0.3s",
       }}>
-
-        {/* === SINGLE ROW === */}
         <div style={{
-          maxWidth: 1400,
-          margin: "0 auto",
-          padding: "0 20px",
-          height: 66,
-          display: "flex",
-          flexDirection: "row",       /* ngang */
-          flexWrap: "nowrap",         /* không xuống dòng */
-          alignItems: "center",
-          justifyContent: "space-between",
+          maxWidth: 1400, margin: "0 auto", padding: "0 20px", height: 66,
+          display: "flex", flexWrap: "nowrap", alignItems: "center", justifyContent: "space-between",
         }}>
 
-          {/* LOGO */}
-          <div onClick={() => setActivePage("home")} style={{
-            display: "flex", flexDirection: "row", alignItems: "center",
-            gap: 9, cursor: "pointer",
-            flex: "0 0 auto",         /* không co giãn */
-          }}>
+          {/* Logo */}
+          <div
+            onClick={() => { setActivePage("home"); onSearch(""); }}
+            style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", flex: "0 0 auto" }}
+          >
             <span style={{ fontSize: 24, filter: "drop-shadow(0 0 8px rgba(232,0,13,0.8))" }}>⚡</span>
             <div>
               <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 22, letterSpacing: 3, color: "#F0F0F0", lineHeight: 1 }}>
@@ -78,8 +90,8 @@ export default function Header({ activePage, setActivePage, cartCount }) {
             </div>
           </div>
 
-          {/* NAV */}
-          <div style={{
+          {/* Nav */}
+       <div style={{
             display: "flex",
             flexDirection: "row",     /* NGANG */
             flexWrap: "nowrap",       /* KHÔNG XUỐNG DÒNG */
@@ -130,12 +142,8 @@ export default function Header({ activePage, setActivePage, cartCount }) {
             ))}
           </div>
 
-          {/* ACTIONS */}
-          <div style={{
-            display: "flex", flexDirection: "row",
-            flexWrap: "nowrap", alignItems: "center",
-            gap: 7, flex: "0 0 auto",
-          }}>
+          {/* Actions */}
+          <div style={{ display: "flex", flexWrap: "nowrap", alignItems: "center", gap: 7, flex: "0 0 auto" }}>
             <button onClick={() => setSearchOpen(!searchOpen)} style={iconBtn}>🔍</button>
 
             <button onClick={() => setActivePage("cart")} style={{ ...iconBtn, position: "relative" }}>
@@ -143,8 +151,7 @@ export default function Header({ activePage, setActivePage, cartCount }) {
               {cartCount > 0 && (
                 <span style={{
                   position: "absolute", top: -6, right: -6,
-                  background: "#E8000D", color: "#fff",
-                  fontSize: 9, fontWeight: 700,
+                  background: "#E8000D", color: "#fff", fontSize: 9, fontWeight: 700,
                   width: 17, height: 17, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontFamily: "'Orbitron',monospace",
@@ -152,11 +159,15 @@ export default function Header({ activePage, setActivePage, cartCount }) {
               )}
             </button>
 
-            <button onClick={() => setActivePage("profile")} title="Tài khoản"
-              style={{ ...iconBtn, background:activePage==="profile"?"rgba(232,0,13,.1)":"none", borderColor:activePage==="profile"?"#E8000D":"#2a2a2a", color:activePage==="profile"?"#E8000D":"#aaa" }}>
-              👤
-            </button>
-
+            <button
+              onClick={() => setActivePage("profile")}
+              style={{
+                ...iconBtn,
+                background:  activePage === "profile" ? "rgba(232,0,13,.1)" : "none",
+                borderColor: activePage === "profile" ? "#E8000D" : "#2a2a2a",
+                color:       activePage === "profile" ? "#E8000D" : "#aaa",
+              }}
+            >👤</button>
 
             <div style={{ paddingLeft: 10, borderLeft: "1px solid #222" }}>
               <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 7, color: "#444", letterSpacing: 1.5 }}>Hotline</div>
@@ -169,21 +180,21 @@ export default function Header({ activePage, setActivePage, cartCount }) {
         {searchOpen && (
           <div style={{
             padding: "10px 20px", borderTop: "1px solid #161616",
-            display: "flex", gap: 8, background: "#0A0A0A",
+            background: "#0A0A0A", display: "flex", gap: 8,
           }}>
             <input
               autoFocus
               value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Tìm kiếm: iPhone, MacBook, iPad Pro..."
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Tìm kiếm: OPPO, iPhone 15, MacBook Pro..."
               style={{
-                flex: 1, background: "#141414",
-                border: "1px solid #2a2a2a", borderRadius: 3,
-                padding: "9px 14px", color: "#F0F0F0",
+                flex: 1, background: "#141414", border: "1px solid #2a2a2a",
+                borderRadius: 3, padding: "9px 14px", color: "#F0F0F0",
                 fontFamily: "'Rajdhani',sans-serif", fontSize: 13, outline: "none",
               }}
             />
-            <button style={{
+            <button onClick={handleSearch} style={{
               background: "#E8000D", border: "none", color: "#fff",
               fontFamily: "'Orbitron',monospace", fontSize: 9.5, fontWeight: 700,
               padding: "0 20px", borderRadius: 3, cursor: "pointer", letterSpacing: 1,
@@ -194,16 +205,3 @@ export default function Header({ activePage, setActivePage, cartCount }) {
     </>
   );
 }
-
-const iconBtn = {
-  background: "none",
-  border: "1px solid #2a2a2a",
-  color: "#aaa",
-  fontSize: 15,
-  width: 35, height: 35,
-  borderRadius: 3,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};

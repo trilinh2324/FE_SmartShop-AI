@@ -59,14 +59,26 @@ h2 {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 11px 13px;
   border-radius: 10px;
   border: 1px solid var(--border);
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
 }
 
 .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ===== GRID 2 CỘT ===== */
+.grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
@@ -149,6 +161,7 @@ h3 {
   border-radius: 10px;
   cursor: pointer;
   transition: .25s;
+  margin-top: 10px;
 }
 
 .btn-add:hover {
@@ -172,8 +185,20 @@ h3 {
   background: var(--red);
 }
 
-/* ===== MOBILE ===== */
+/* ===== MENU BUTTON ===== */
+/* ✅ Ẩn trên desktop */
+.menu {
+  display: none !important;
+}
+
+/* ✅ Chỉ hiện trên mobile */
 @media (max-width: 768px) {
+  .menu {
+    display: block !important;
+    cursor: pointer;
+  }
+
+  .grid-2,
   .form-row,
   .detail-grid {
     grid-template-columns: 1fr;
@@ -195,8 +220,13 @@ h3 {
     display: flex;
     justify-content: center;
   }
+
+  .admin-card {
+    padding: 16px;
+  }
 }
 
+/* ===== ERROR ===== */
 .error-input {
   border: 1.5px solid #e53935 !important;
   background: #fff6f6;

@@ -152,6 +152,7 @@
   padding: 14px 20px;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  flex-wrap: wrap;
 }
 
 .admin-wrapper .order-filter label {
@@ -175,6 +176,24 @@
 }
 
 .admin-wrapper .order-filter select:focus { border-color: #dc2626; }
+
+.admin-wrapper .filter-divider {
+  width: 1px;
+  height: 24px;
+  background: #e2e8f0;
+  margin: 0 4px;
+}
+
+.admin-wrapper .total-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.admin-wrapper .total-count strong {
+  color: #1e293b;
+  font-weight: 700;
+}
 
 .admin-wrapper .loading-text {
   text-align: center;
@@ -284,6 +303,73 @@
   font-style: italic;
 }
 
+/* ===== PAGINATION ===== */
+.admin-wrapper .pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding: 14px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-wrapper .page-info {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.admin-wrapper .page-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-wrapper .page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.admin-wrapper .page-btn:hover:not(:disabled) {
+  background: #1e293b;
+  color: #fff;
+  border-color: #1e293b;
+}
+
+.admin-wrapper .page-btn.active {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  font-weight: 700;
+}
+
+.admin-wrapper .page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-wrapper .page-dots {
+  font-size: 14px;
+  color: #94a3b8;
+  padding: 0 4px;
+  user-select: none;
+}
+
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {
   .admin-wrapper .sidebar {
@@ -305,4 +391,11 @@
   .admin-wrapper .admin-order { padding: 16px; }
 
   .admin-wrapper .order-filter { flex-wrap: wrap; }
+
+  .admin-wrapper .total-count { margin-left: 0; }
+
+  .admin-wrapper .pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

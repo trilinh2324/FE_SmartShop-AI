@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import instance from "../../api/utils/axiosConfig";
 import "../../css/AdminUserPage.css";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Home,
   Package,
@@ -12,13 +12,17 @@ import {
   LogOut,
   Menu,
 } from "lucide-react";
+import { RefreshContext } from "../../../App";
 
 const API_URL = "/api/admin/users";
 
 export default function AdminUserPage() {
+
+  const refresh = useContext(RefreshContext);
+
   const [users, setUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     username: "",
@@ -29,9 +33,9 @@ const navigate = useNavigate();
 
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  /* ========================
+     LOAD USERS
+  ======================== */
 
   const fetchUsers = async () => {
     try {
@@ -41,6 +45,19 @@ const navigate = useNavigate();
       console.error("Không thể tải danh sách user");
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  /* AUTO REFRESH 5s */
+  useEffect(() => {
+    fetchUsers();
+  }, [refresh]);
+
+  /* ========================
+     FORM
+  ======================== */
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -74,7 +91,7 @@ const navigate = useNavigate();
   };
 
   /* ========================
-     PHÂN QUYỀN
+     PERMISSIONS
   ======================== */
 
   const canEditOrDelete = (role) => {
@@ -117,21 +134,33 @@ const navigate = useNavigate();
 
     fetchUsers();
   };
-    const handleLogout = () => {
-    const confirmLogout = window.confirm(
-      "Bạn có chắc muốn đăng xuất?"
-    );
+
+  /* ========================
+     LOGOUT
+  ======================== */
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("Bạn có chắc muốn đăng xuất?");
     if (!confirmLogout) return;
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/admin/login", { replace: true });
+
     setTimeout(() => {
       window.location.reload();
     }, 100);
   };
+
+  /* ========================
+     UI
+  ======================== */
+
   return (
     <div className="admin-layout">
-      {/* ===== SIDEBAR ===== */}
+
+      {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="logo">SMARTSHOP</div>
 
@@ -145,15 +174,16 @@ const navigate = useNavigate();
         </nav>
 
         <div className="logout">
-         <a onClick={handleLogout}>
-                                                   <LogOut />
-                                                   Đăng xuất
-                                                 </a>
+          <a onClick={handleLogout}>
+            <LogOut />
+            Đăng xuất
+          </a>
         </div>
       </aside>
 
-      {/* ===== CONTENT ===== */}
+      {/* MAIN */}
       <div className="main-content">
+
         {/* MOBILE HEADER */}
         <div className="mobile-header">
           <button onClick={() => setSidebarOpen(true)}>
@@ -170,10 +200,12 @@ const navigate = useNavigate();
         )}
 
         <div className="content-wrapper">
+
           <h2>Quản lý người dùng</h2>
 
-          {/* ===== FORM ===== */}
+          {/* FORM */}
           <form className="user-form" onSubmit={handleSubmit}>
+
             <input
               name="username"
               placeholder="Username"
@@ -214,11 +246,14 @@ const navigate = useNavigate();
             <button type="submit" className="btn-primary">
               {editingId ? "Cập nhật" : "Thêm user"}
             </button>
+
           </form>
 
-          {/* ===== TABLE ===== */}
+          {/* TABLE */}
           <div className="table-wrapper">
+
             <table className="user-table">
+
               <thead>
                 <tr>
                   <th>ID</th>
@@ -231,8 +266,10 @@ const navigate = useNavigate();
               </thead>
 
               <tbody>
+
                 {users.map((u) => (
                   <tr key={u.id}>
+
                     <td>{u.id}</td>
                     <td>{u.username}</td>
                     <td>{u.email}</td>
@@ -253,6 +290,7 @@ const navigate = useNavigate();
                     </td>
 
                     <td className="actions">
+
                       {canEditOrDelete(u.role) && (
                         <>
                           <button
@@ -290,15 +328,22 @@ const navigate = useNavigate();
                             : "Khoá"}
                         </button>
                       )}
+
                     </td>
+
                   </tr>
                 ))}
+
               </tbody>
+
             </table>
+
           </div>
 
         </div>
+
       </div>
+
     </div>
   );
 }

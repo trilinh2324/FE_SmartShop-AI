@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useContext } from "react";
+import { RefreshContext } from "../../App";
 
 const API_BASE = "http://localhost:8080/api";
+
 
 const formatPrice = (n) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
 
@@ -20,7 +23,6 @@ async function authFetch(url, options = {}) {
   });
 }
 
-// ✅ Khớp với backend enum: PENDING_CONFIRMATION, CONFIRMED, SHIPPING, DELIVERED, COMPLETED, CANCELLED
 const STATUS_COLOR = {
   PENDING_CONFIRMATION: "#6366f1",
   CONFIRMED:            "#3b82f6",
@@ -77,7 +79,35 @@ function Alert({ msg }) {
   );
 }
 
+// ── Inline message ngay dưới button ──────────────────────────
+function InlineMsg({ msg }) {
+  if (!msg.text) return null;
+  const isOk = msg.type === "ok";
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      marginTop: 12, padding: "10px 14px", borderRadius: 4,
+      border: `1px solid ${isOk ? "rgba(34,197,94,.3)" : "rgba(232,0,13,.3)"}`,
+      background: isOk ? "rgba(34,197,94,.06)" : "rgba(232,0,13,.06)",
+      animation: "fadeSlideIn 0.25s ease both",
+    }}>
+      <span style={{ fontSize: 15, flexShrink: 0 }}>{isOk ? "✅" : "⚠️"}</span>
+      <span style={{
+        fontFamily: "'Rajdhani',sans-serif", fontSize: 13, fontWeight: 600,
+        color: isOk ? "#22c55e" : "#E8000D",
+      }}>{msg.text}</span>
+    </div>
+  );
+}
+
 export default function UserProfilePage({ setActivePage }) {
+
+const refresh = useContext(RefreshContext);
+
+useEffect(() => {
+  fetchOrders();
+}, [refresh]);
+
   const [tab, setTab] = useState("profile");
 
   // ── Profile
@@ -99,9 +129,12 @@ export default function UserProfilePage({ setActivePage }) {
 
   // ── Password
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [pwMsg, setPwMsg] = useState({ type: "", text: "" });
+  const [pwMsg,  setPwMsg]  = useState({ type: "", text: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [showPw, setShowPw] = useState({ cur: false, nw: false, cf: false });
+
+  // ── Field-level errors (hiện ngay dưới từng input)
+  const [pwErrors, setPwErrors] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
 
   const TABS = [
     { key: "profile",  icon: "👤", label: "Thông tin cá nhân" },
@@ -110,8 +143,9 @@ export default function UserProfilePage({ setActivePage }) {
   ];
 
   useEffect(() => { fetchProfile(); }, []);
-useEffect(() => { fetchOrders(); }, []);
-useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
+  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
+
   const fetchProfile = async () => {
     setPLoading(true);
     try {
@@ -190,21 +224,76 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
     }
   };
 
+  // ── Validate từng field realtime ─────────────────────────────
+  const validateField = (key, value) => {
+    switch (key) {
+      case "currentPassword":
+        return value ? "" : "Vui lòng nhập mật khẩu hiện tại";
+      case "newPassword":
+        if (!value) return "Vui lòng nhập mật khẩu mới";
+        if (value.length < 6) return "Mật khẩu mới ít nhất 6 ký tự";
+        return "";
+      case "confirmPassword":
+        if (!value) return "Vui lòng xác nhận mật khẩu mới";
+        if (value !== pwForm.newPassword) return "Mật khẩu xác nhận không khớp";
+        return "";
+      default: return "";
+    }
+  };
+
+  const handlePwChange = (key, value) => {
+    setPwForm(f => ({ ...f, [key]: value }));
+    // Xóa lỗi khi user đang gõ
+    setPwErrors(e => ({ ...e, [key]: "" }));
+    setPwMsg({ type: "", text: "" });
+  };
+
+  const handlePwBlur = (key) => {
+    const err = validateField(key, pwForm[key]);
+    setPwErrors(e => ({ ...e, [key]: err }));
+    // Kiểm tra confirmPassword khi newPassword thay đổi
+    if (key === "newPassword" && pwForm.confirmPassword) {
+      const cfErr = pwForm.confirmPassword !== pwForm[key] ? "Mật khẩu xác nhận không khớp" : "";
+      setPwErrors(e => ({ ...e, confirmPassword: cfErr }));
+    }
+  };
+
   const savePassword = async () => {
-    if (!pwForm.currentPassword)                       { setPwMsg({ type: "err", text: "Vui lòng nhập mật khẩu hiện tại" }); return; }
-    if (pwForm.newPassword.length < 6)                 { setPwMsg({ type: "err", text: "Mật khẩu mới ít nhất 6 ký tự" }); return; }
-    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwMsg({ type: "err", text: "Mật khẩu xác nhận không khớp" }); return; }
+    // Validate tất cả fields trước khi submit
+    const errors = {
+      currentPassword: validateField("currentPassword", pwForm.currentPassword),
+      newPassword:     validateField("newPassword",     pwForm.newPassword),
+      confirmPassword: validateField("confirmPassword", pwForm.confirmPassword),
+    };
+    setPwErrors(errors);
+
+    if (Object.values(errors).some(e => e)) return; // Có lỗi → dừng
+
     setPwSaving(true); setPwMsg({ type: "", text: "" });
     try {
       const res = await authFetch(`${API_BASE}/user/auth/change-password`, {
         method: "POST",
-        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
+        body: JSON.stringify({
+          currentPassword: pwForm.currentPassword,
+          newPassword:     pwForm.newPassword,
+        }),
       });
       const d = await res.json();
-      if (!res.ok) throw new Error(d.message || "Đổi mật khẩu thất bại");
-      setPwMsg({ type: "ok", text: "Đổi mật khẩu thành công!" });
+      if (!res.ok) {
+        // Lỗi từ backend (vd: sai mật khẩu hiện tại)
+        const msg = d.message || d || "Đổi mật khẩu thất bại";
+        // Hiện lỗi đúng field nếu biết
+        if (typeof msg === "string" && msg.toLowerCase().includes("hiện tại")) {
+          setPwErrors(e => ({ ...e, currentPassword: msg }));
+        } else {
+          setPwMsg({ type: "err", text: msg });
+        }
+        return;
+      }
+      setPwMsg({ type: "ok", text: "🎉 Đổi mật khẩu thành công!" });
       setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setTimeout(() => setPwMsg({ type: "", text: "" }), 3000);
+      setPwErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => setPwMsg({ type: "", text: "" }), 4000);
     } catch (e) {
       setPwMsg({ type: "err", text: e.message });
     } finally {
@@ -221,7 +310,6 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
   const getIImg   = (i) => i.productColor?.image || null;
   const getDate   = (o) => o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : o.orderDate ? new Date(o.orderDate).toLocaleDateString("vi-VN") : "—";
 
-  // ✅ Filter tabs khớp với backend enum
   const FILTER_TABS = [
     { key: "all",                  label: "Tất cả"       },
     { key: "PENDING_CONFIRMATION", label: "Chờ xác nhận" },
@@ -247,9 +335,36 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
   const blurGray = (e) => (e.target.style.borderColor = "#252525");
   const closeModal = () => { setDetail(null); setDLoad(false); };
 
+  // ── Field error helper ────────────────────────────────────────
+  const FieldError = ({ field }) => pwErrors[field] ? (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 5,
+      marginTop: 5, fontSize: 11.5, color: "#E8000D",
+      fontFamily: "'Rajdhani',sans-serif", fontWeight: 600,
+      animation: "fadeSlideIn 0.2s ease both",
+    }}>
+      <span style={{ fontSize: 12 }}>⚠</span>
+      {pwErrors[field]}
+    </div>
+  ) : null;
+
   /* ═════════════════════ RENDER ═════════════════════ */
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "36px 20px", fontFamily: "'Rajdhani',sans-serif" }}>
+
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-4px); }
+          40%, 80% { transform: translateX(4px); }
+        }
+        .pw-input-error { border-color: #E8000D !important; }
+        .pw-input-error:focus { border-color: #E8000D !important; }
+      `}</style>
 
       {/* ── Hero banner ── */}
       <div style={{ position: "relative", marginBottom: 22, background: "#080808", border: "1px solid #1c1c1c", borderRadius: 10, padding: "26px 30px", overflow: "hidden", display: "flex", alignItems: "center", gap: 22 }}>
@@ -266,9 +381,9 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
 
         <div style={{ display: "flex", gap: 28, position: "relative" }}>
           {[
-            [orders.length,                                                          "Tổng đơn"  ],
-            [orders.filter(o => ["DELIVERED","COMPLETED"].includes(getStatus(o))).length, "Đã nhận"   ],
-            [orders.filter(o => ["PENDING_CONFIRMATION","CONFIRMED"].includes(getStatus(o))).length, "Chờ xử lý" ],
+            [orders.length, "Tổng đơn"],
+            [orders.filter(o => ["DELIVERED","COMPLETED"].includes(getStatus(o))).length, "Đã nhận"],
+            [orders.filter(o => ["PENDING_CONFIRMATION","CONFIRMED"].includes(getStatus(o))).length, "Chờ xử lý"],
           ].map(([n, l]) => (
             <div key={l} style={{ textAlign: "center" }}>
               <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 24, fontWeight: 900, color: "#E8000D", lineHeight: 1 }}>{n}</div>
@@ -303,8 +418,7 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22, paddingBottom: 14, borderBottom: "1px solid #141414" }}>
                 <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 2.5, color: "#E8000D" }}>👤 THÔNG TIN CÁ NHÂN</div>
                 {!pLoading && (
-                  <button
-                    onClick={() => { setEditing(!editing); setPForm({ ...profile }); setPMsg({ type: "", text: "" }); }}
+                  <button onClick={() => { setEditing(!editing); setPForm({ ...profile }); setPMsg({ type: "", text: "" }); }}
                     style={{ ...btnGhost, padding: "7px 16px", fontSize: 7.5, border: `1px solid ${editing ? "#E8000D" : "#aaa7a7"}`, color: editing ? "#E8000D" : "#aaa7a7" }}>
                     {editing ? "✕ HỦY" : "✏️ CHỈNH SỬA"}
                   </button>
@@ -378,12 +492,9 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
               <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 2.5, color: "#E8000D", marginBottom: 18, paddingBottom: 14, borderBottom: "1px solid #141414" }}>
                 📦 LỊCH SỬ ĐƠN HÀNG
               </div>
-
-              {/* Search + Filter */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm mã đơn, tên sản phẩm..."
                   style={{ ...inp, flex: 1, minWidth: 160, padding: "8px 14px" }} onFocus={focusRed} onBlur={blurGray} />
-                {/* ✅ Filter tabs khớp với OrderStatus enum */}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {FILTER_TABS.map(({ key, label }) => (
                     <button key={key} onClick={() => setFilter(key)}
@@ -393,7 +504,6 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                   ))}
                 </div>
               </div>
-
               {oLoad ? (
                 <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#cac8c8", letterSpacing: 3 }}>ĐANG TẢI...</div>
               ) : oError ? (
@@ -418,16 +528,12 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                         <span style={{ fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, color: "#F0F0F0" }}>#{order.id}</span>
                         <span style={{ fontSize: 11, color: "#a7a4a4" }}>📅 {getDate(order)}</span>
                       </div>
-                     
                       <span style={{ background: `${color}18`, border: `1px solid ${color}44`, color, fontFamily: "'Orbitron',monospace", fontSize: 8, fontWeight: 700, padding: "4px 11px", borderRadius: 3, letterSpacing: .8 }}>{label}</span>
                     </div>
-
                     {items.slice(0, 2).map((item, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderTop: "1px solid #111" }}>
                         <div style={{ width: 42, height: 42, background: "#141414", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #1e1e1e", overflow: "hidden", flexShrink: 0 }}>
-                          {getIImg(item)?.startsWith?.("http")
-                            ? <img src={getIImg(item)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            : <span style={{ fontSize: 20 }}>📦</span>}
+                          {getIImg(item)?.startsWith?.("http") ? <img src={getIImg(item)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 20 }}>📦</span>}
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#D8D8D8" }}>{getIName(item)}</div>
@@ -436,16 +542,12 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                         <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 12, color: "#E8000D", fontWeight: 700 }}>{formatPrice(getIPrice(item) * getIQty(item))}</div>
                       </div>
                     ))}
-                    {items.length > 2 && (
-                      <div style={{ fontSize: 11, color: "#aca9a9", paddingTop: 8, borderTop: "1px solid #111" }}>+{items.length - 2} sản phẩm khác</div>
-                    )}
-
+                    {items.length > 2 && <div style={{ fontSize: 11, color: "#aca9a9", paddingTop: 8, borderTop: "1px solid #111" }}>+{items.length - 2} sản phẩm khác</div>}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 11, borderTop: "1px solid #111" }}>
                       <div style={{ fontSize: 12, color: "#c1bdbd" }}>
                         Tổng cộng: <span style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, color: "#E8000D", fontWeight: 700 }}>{formatPrice(order.totalAmount || order.totalPayableAmount)}</span>
                       </div>
-                      <button onClick={() => fetchDetail(order.id)}
-                        style={{ background: "none", border: "1px solid #252525", color: "#c2bdbd", fontFamily: "'Orbitron',monospace", fontSize: 7.5, padding: "6px 14px", borderRadius: 3, cursor: "pointer" }}>
+                      <button onClick={() => fetchDetail(order.id)} style={{ background: "none", border: "1px solid #252525", color: "#c2bdbd", fontFamily: "'Orbitron',monospace", fontSize: 7.5, padding: "6px 14px", borderRadius: 3, cursor: "pointer" }}>
                         🔍 CHI TIẾT
                       </button>
                     </div>
@@ -461,32 +563,41 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
               <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 2.5, color: "#E8000D", marginBottom: 22, paddingBottom: 14, borderBottom: "1px solid #141414" }}>
                 🔒 ĐỔI MẬT KHẨU
               </div>
-              <Alert msg={pwMsg} />
 
+              {/* ── 3 fields với lỗi ngay dưới mỗi field ── */}
               {[
                 ["Mật khẩu hiện tại",     "currentPassword", "cur"],
                 ["Mật khẩu mới",          "newPassword",      "nw" ],
                 ["Xác nhận mật khẩu mới", "confirmPassword",  "cf" ],
               ].map(([label, key, sk]) => (
-                <div key={key} style={{ marginBottom: 14 }}>
+                <div key={key} style={{ marginBottom: 16 }}>
                   <label style={lb}>{label}</label>
                   <div style={{ position: "relative" }}>
                     <input
                       type={showPw[sk] ? "text" : "password"}
                       value={pwForm[key]}
-                      onChange={e => setPwForm(f => ({ ...f, [key]: e.target.value }))}
+                      onChange={e => handlePwChange(key, e.target.value)}
+                      onBlur={() => handlePwBlur(key)}
                       placeholder="••••••••"
-                      style={{ ...inp, paddingRight: 46 }}
-                      onFocus={focusRed} onBlur={blurGray}
+                      className={pwErrors[key] ? "pw-input-error" : ""}
+                      style={{
+                        ...inp,
+                        paddingRight: 46,
+                        borderColor: pwErrors[key] ? "#E8000D" : "#252525",
+                      }}
+                      onFocus={e => e.target.style.borderColor = pwErrors[key] ? "#E8000D" : "#E8000D"}
                     />
                     <button onClick={() => setShowPw(p => ({ ...p, [sk]: !p[sk] }))}
                       style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#444", lineHeight: 1 }}>
                       {showPw[sk] ? "🙈" : "👁️"}
                     </button>
                   </div>
+                  {/* ✅ Lỗi ngay dưới từng input */}
+                  <FieldError field={key} />
                 </div>
               ))}
 
+              {/* Password strength bar */}
               {pwForm.newPassword && (
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
@@ -498,9 +609,19 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                 </div>
               )}
 
-              <button onClick={savePassword} disabled={pwSaving} style={{ ...btnRed, opacity: pwSaving ? .6 : 1 }}>
-                {pwSaving ? "ĐANG XỬ LÝ..." : "CẬP NHẬT MẬT KHẨU"}
-              </button>
+              {/* ✅ Button + thông báo kết quả ngay bên dưới */}
+              <div>
+                <button
+                  onClick={savePassword}
+                  disabled={pwSaving}
+                  style={{ ...btnRed, opacity: pwSaving ? .6 : 1, minWidth: 180 }}
+                >
+                  {pwSaving ? "ĐANG XỬ LÝ..." : "CẬP NHẬT MẬT KHẨU"}
+                </button>
+
+                {/* ✅ Thông báo thành công / lỗi ngay dưới button */}
+                <InlineMsg msg={pwMsg} />
+              </div>
 
               <div style={{ marginTop: 28, paddingTop: 22, borderTop: "1px solid #141414", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -523,7 +644,6 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
           onClick={closeModal}>
           <div style={{ background: "#0A0A0A", border: "1px solid #E8000D", borderRadius: 10, padding: "28px", width: "100%", maxWidth: 560, boxShadow: "0 28px 80px rgba(232,0,13,.2)", maxHeight: "90vh", overflowY: "auto" }}
             onClick={e => e.stopPropagation()}>
-
             {dLoad && !detail ? (
               <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#252525", letterSpacing: 3 }}>ĐANG TẢI...</div>
             ) : detail && (
@@ -544,7 +664,6 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                     <button onClick={closeModal} style={{ background: "none", border: "none", color: "#444", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>✕</button>
                   </div>
                 </div>
-
                 <div style={{ background: "#0d0d0d", border: "1px solid #161616", borderRadius: 6, padding: "14px 18px", marginBottom: 14 }}>
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 7.5, letterSpacing: 1.5, color: "#2a2a2a", marginBottom: 12 }}>THÔNG TIN NGƯỜI NHẬN</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -563,15 +682,12 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                     ))}
                   </div>
                 </div>
-
                 <div style={{ background: "#0d0d0d", border: "1px solid #161616", borderRadius: 6, padding: "14px 18px", marginBottom: 14 }}>
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 7.5, letterSpacing: 1.5, color: "#2a2a2a", marginBottom: 12 }}>SẢN PHẨM ({getItems(detail).length})</div>
                   {getItems(detail).map((item, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderTop: i > 0 ? "1px solid #111" : "none" }}>
                       <div style={{ width: 44, height: 44, background: "#141414", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #1e1e1e", overflow: "hidden", flexShrink: 0 }}>
-                        {getIImg(item)?.startsWith?.("http")
-                          ? <img src={getIImg(item)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          : <span style={{ fontSize: 22 }}>📦</span>}
+                        {getIImg(item)?.startsWith?.("http") ? <img src={getIImg(item)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>📦</span>}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#D8D8D8" }}>{getIName(item)}</div>
@@ -581,7 +697,6 @@ useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab]);
                     </div>
                   ))}
                 </div>
-
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", background: "rgba(232,0,13,.05)", border: "1px solid rgba(232,0,13,.15)", borderRadius: 6 }}>
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#555", letterSpacing: 1.2 }}>TỔNG THANH TOÁN</div>
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 20, color: "#E8000D", fontWeight: 900 }}>{formatPrice(detail.totalAmount || detail.totalPayableAmount)}</div>

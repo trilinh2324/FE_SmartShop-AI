@@ -12,10 +12,7 @@ const WARDS     = ["Phường Bến Nghé","Phường Bến Thành","Phường C
 const formatPrice = (n) => new Intl.NumberFormat("vi-VN",{style:"currency",currency:"VND"}).format(n);
 
 function getToken() {
-  return (
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token")
-  );
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
 }
 
 async function authFetch(url, options = {}) {
@@ -37,17 +34,12 @@ export default function CheckoutPage({ setActivePage }) {
   const [errors,     setErrors]     = useState({});
   const [processing, setProcessing] = useState(false);
 
-  // Cart from API
   const [cart,        setCart]        = useState([]);
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError,   setCartError]   = useState("");
+  const [billResult,  setBillResult]  = useState(null);
 
-  // Order result
-  const [billResult, setBillResult] = useState(null); // { billId, totalAmount }
-
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  useEffect(() => { fetchCart(); }, []);
 
   const fetchCart = async () => {
     setCartLoading(true);
@@ -63,20 +55,15 @@ export default function CheckoutPage({ setActivePage }) {
     }
   };
 
-  // Lấy thông tin sản phẩm từ cart item (tuỳ cấu trúc backend)
-const getItemImage = (item) => {
-  const path =
-    item.productColor?.image ||
-    item.productColor?.product?.image;
-
-  return path
-    ? `http://localhost:8080${path}`
-    : null;
-};  const getItemName   = (item) => item.productColor?.product?.name || item.name || "Sản phẩm";
-  const getItemColor  = (item) => item.productColor?.color?.name || "";
-  const getItemPrice  = (item) => item.productColor?.product?.price || item.price || 0;
-  const getItemQty    = (item) => item.quantity || item.qty || 1;
-  const getItemTotal  = (item) => getItemPrice(item) * getItemQty(item);
+  const getItemImage = (item) => {
+    const path = item.productColor?.image || item.productColor?.product?.image;
+    return path ? `http://localhost:8080${path}` : null;
+  };
+  const getItemName  = (item) => item.productColor?.product?.name || item.name || "Sản phẩm";
+  const getItemColor = (item) => item.productColor?.color?.name || "";
+  const getItemPrice = (item) => item.productColor?.product?.price || item.price || 0;
+  const getItemQty   = (item) => item.quantity || item.qty || 1;
+  const getItemTotal = (item) => getItemPrice(item) * getItemQty(item);
 
   const subtotal = cart.reduce((s, i) => s + getItemTotal(i), 0);
   const shipping = subtotal >= 500000 ? 0 : 30000;
@@ -95,7 +82,6 @@ const getItemImage = (item) => {
     return Object.keys(e).length === 0;
   };
 
-  // Bước 1: Tạo Bill → lưu billId
   const createBill = async () => {
     const items = cart.map(item => ({
       productColorId: item.productColor?.id || item.productColorId,
@@ -125,18 +111,16 @@ const getItemImage = (item) => {
       const err = await res.json();
       throw new Error(err.error || "Tạo đơn hàng thất bại");
     }
-
-    return res.json(); // { message, billId, totalAmount }
+    return res.json();
   };
 
-  // Bước 2: Nếu PayOS → lấy link thanh toán
   const createPayment = async (billId) => {
     const res = await authFetch(`${API_BASE}/payment/create/${billId}`, { method: "POST" });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "Tạo link thanh toán thất bại");
     }
-    return res.json(); // { checkoutUrl }
+    return res.json();
   };
 
   const handlePlaceOrder = async () => {
@@ -144,13 +128,15 @@ const getItemImage = (item) => {
     try {
       const billData = await createBill();
       const billId   = billData.billId;
-localStorage.setItem("lastBillId", billId); 
-  if (payment === "cod" || payment === "banking") {
-  setBillResult(billData);
-  setCart([]);        // ← thêm dòng này
-  setStep(3);
-} else {
-        // PayOS (momo, vnpay): lấy checkout URL rồi redirect
+      localStorage.setItem("lastBillId", billId);
+
+      if (payment === "cod") {
+        // COD → thành công ngay
+        setBillResult(billData);
+        setCart([]);
+        setStep(3);
+      } else {
+        // banking + banking_online → đều dùng PayOS
         const payData = await createPayment(billId);
         window.location.href = payData.checkoutUrl;
       }
@@ -161,7 +147,7 @@ localStorage.setItem("lastBillId", billId);
     }
   };
 
-  /* ─── SUCCESS ─────────────────────────────────────────── */
+  /* ─── SUCCESS ─────────────────────────────────────── */
   if (step === 3 && billResult) return (
     <div style={{ minHeight:"80vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 20px" }}>
       <div style={{ textAlign:"center", maxWidth:500 }}>
@@ -171,9 +157,9 @@ localStorage.setItem("lastBillId", billId);
         <p style={{ color:"#555", fontSize:14, lineHeight:1.8, marginBottom:8 }}>
           Đơn hàng <span style={{ color:"#E8000D", fontFamily:"'Orbitron',monospace", fontWeight:700 }}>#{billResult.billId}</span> đã xác nhận.
         </p>
-        <p style={{ color:"#444", fontSize:13, marginBottom:32 }}>Chúng tôi sẽ liên hệ qua <b style={{color:"#F0F0F0"}}>{form.phone}</b> trong 30 phút.</p>
-
-        {/* Order items */}
+        <p style={{ color:"#444", fontSize:13, marginBottom:32 }}>
+          Chúng tôi sẽ liên hệ qua <b style={{color:"#F0F0F0"}}>{form.phone}</b> trong 30 phút.
+        </p>
         <div style={{ background:"#0F0F0F", border:"1px solid #1e1e1e", borderRadius:5, padding:"18px 20px", marginBottom:28, textAlign:"left" }}>
           {cart.map((item, i) => (
             <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid #141414", fontSize:13 }}>
@@ -182,11 +168,10 @@ localStorage.setItem("lastBillId", billId);
             </div>
           ))}
           <div style={{ display:"flex", justifyContent:"space-between", paddingTop:12, fontFamily:"'Orbitron',monospace", fontSize:14, fontWeight:900 }}>
-            <span style={{color:"#555"}}>TỔNG xxx</span>
+            <span style={{color:"#555"}}>TỔNG</span>
             <span style={{color:"#E8000D"}}>{formatPrice(billResult.totalAmount || total)}</span>
           </div>
         </div>
-
         <button onClick={() => setActivePage && setActivePage("home")}
           style={{ background:"linear-gradient(135deg,#E8000D,#8B0000)", border:"none", color:"#fff", fontFamily:"'Orbitron',monospace", fontSize:10, fontWeight:700, letterSpacing:1.5, padding:"13px 32px", borderRadius:4, cursor:"pointer" }}>
           TIẾP TỤC MUA HÀNG →
@@ -202,7 +187,7 @@ localStorage.setItem("lastBillId", billId);
         <h1 style={{ fontFamily:"'Bebas Neue',cursive", fontSize:38, letterSpacing:4, color:"#F0F0F0", lineHeight:1 }}>ĐẶT HÀNG</h1>
       </div>
 
-      {/* Progress steps */}
+      {/* Progress */}
       <div style={{ display:"flex", alignItems:"center", marginBottom:36 }}>
         {[["01","Thông tin nhận hàng",1],["02","Phương thức thanh toán",2]].map(([num,label,s],i) => (
           <div key={s} style={{ display:"flex", alignItems:"center" }}>
@@ -218,6 +203,7 @@ localStorage.setItem("lastBillId", billId);
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 370px", gap:22, alignItems:"start" }}>
+
         {/* ── LEFT ── */}
         <div>
           {/* STEP 1 */}
@@ -271,7 +257,7 @@ localStorage.setItem("lastBillId", billId);
                   <textarea value={form.note} onChange={e=>set("note",e.target.value)} placeholder="Giao giờ hành chính, gọi trước khi giao..." rows={3} style={{...inp,resize:"vertical",minHeight:74}}/>
                 </div>
               </div>
-              <button onClick={()=>{if(validate())setStep(2);}} style={{ width:"100%", marginTop:20, background:"linear-gradient(135deg,#E8000D,#8B0000)", border:"none", color:"#fff", fontFamily:"'Orbitron',monospace", fontSize:10.5, fontWeight:700, letterSpacing:1.5, padding:"14px 0", borderRadius:4, cursor:"pointer", boxShadow:"0 6px 22px rgba(232,0,13,.35)" }}>
+              <button onClick={()=>{ if(validate()) setStep(2); }} style={{ width:"100%", marginTop:20, background:"linear-gradient(135deg,#E8000D,#8B0000)", border:"none", color:"#fff", fontFamily:"'Orbitron',monospace", fontSize:10.5, fontWeight:700, letterSpacing:1.5, padding:"14px 0", borderRadius:4, cursor:"pointer", boxShadow:"0 6px 22px rgba(232,0,13,.35)" }}>
                 TIẾP THEO: PHƯƠNG THỨC THANH TOÁN →
               </button>
             </div>
@@ -291,12 +277,45 @@ localStorage.setItem("lastBillId", billId);
 
               <div style={{ background:"#0A0A0A", border:"1px solid #1a1a1a", borderRadius:6, padding:"24px" }}>
                 <div style={{ fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:2, color:"#E8000D", marginBottom:18, paddingBottom:12, borderBottom:"1px solid #161616" }}>💳 PHƯƠNG THỨC THANH TOÁN</div>
+
+                {/* ✅ 3 phương thức: COD, Ngân hàng (chuyển khoản thủ công), Ngân hàng online (PayOS) */}
                 {[
-                  {key:"cod",    icon:"🚚", title:"Thanh toán khi nhận hàng (COD)", desc:"Trả tiền mặt khi giao hàng đến tay bạn"},
-                  {key:"momo",   icon:"💜", title:"Ngân Hàng(PayOS)",                 desc:"Thanh toán nhanh qua PayOS → Ngân Hàng"},
-                  {key:"vnpay",  icon:"🔵", title:"VNPay / Thẻ ATM / Visa (PayOS)",  desc:"Thanh toán online qua cổng PayOS → VNPay"},
+                  {
+                    key:   "cod",
+                    icon:  "🚚",
+                    title: "Thanh toán khi nhận hàng (COD)",
+                    desc:  "Trả tiền mặt khi giao hàng đến tay bạn",
+                  },
+                  {
+                    key:   "banking",
+                    icon:  "🏦",
+                    title: "Chuyển khoản ngân hàng (PayOS)",
+                    desc:  "Quét QR hoặc chuyển khoản qua cổng PayOS – nhanh & tự động xác nhận",
+                  },
+                  {
+                    key:   "banking_online",
+                    icon:  "💳",
+                    title: "Ngân hàng online / Thẻ ATM / Visa (PayOS)",
+                    desc:  "Thanh toán nhanh qua cổng PayOS – hỗ trợ tất cả ngân hàng",
+                  },
                 ].map(m => (
-                  <div key={m.key} onClick={()=>setPayment(m.key)} style={{ background:payment===m.key?"#130909":"#111", border:`1px solid ${payment===m.key?"#E8000D":"#1e1e1e"}`, borderRadius:4, padding:"14px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:13, marginBottom:9, transition:"all .2s", boxShadow:payment===m.key?"0 0 14px rgba(232,0,13,.12)":"none" }}>
+                  <div
+                    key={m.key}
+                    onClick={() => setPayment(m.key)}
+                    style={{
+                      background:  payment===m.key ? "#130909" : "#111",
+                      border:      `1px solid ${payment===m.key ? "#E8000D" : "#1e1e1e"}`,
+                      borderRadius: 4,
+                      padding:     "14px 16px",
+                      cursor:      "pointer",
+                      display:     "flex",
+                      alignItems:  "center",
+                      gap:         13,
+                      marginBottom: 9,
+                      transition:  "all .2s",
+                      boxShadow:   payment===m.key ? "0 0 14px rgba(232,0,13,.12)" : "none",
+                    }}
+                  >
                     <div style={{ width:18, height:18, borderRadius:"50%", border:`2px solid ${payment===m.key?"#E8000D":"#2a2a2a"}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                       {payment===m.key && <div style={{ width:8, height:8, borderRadius:"50%", background:"#E8000D", boxShadow:"0 0 6px rgba(232,0,13,.8)" }}/>}
                     </div>
@@ -308,29 +327,22 @@ localStorage.setItem("lastBillId", billId);
                   </div>
                 ))}
 
-                {payment==="banking" && (
-                  <div style={{ background:"#0F0F0F", border:"1px solid #E8000D", borderRadius:4, padding:"15px 18px", marginBottom:6 }}>
-                    <div style={{ fontFamily:"'Orbitron',monospace", fontSize:8, color:"#E8000D", letterSpacing:2, marginBottom:11 }}>THÔNG TIN CHUYỂN KHOẢN</div>
-                    {[["Ngân hàng","BIDV"],["Số tài khoản","2131187208"],["Chủ TK","LE TRI LINH"],["Nội dung",`TZ ${form.phone||"XXXXXXX"}`]].map(([k,v]) => (
-                      <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #1a1a1a", fontSize:12 }}>
-                        <span style={{color:"#555"}}>{k}</span>
-                        <span style={{color:"#F0F0F0", fontWeight:600}}>{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(payment==="momo"||payment==="vnpay") && (
+                {/* Thông báo PayOS – hiện cho banking và banking_online */}
+                {(payment==="banking" || payment==="banking_online") && (
                   <div style={{ background:"#0F0F0F", border:"1px solid #333", borderRadius:4, padding:"13px 16px", marginBottom:6, fontSize:12, color:"#555", display:"flex", alignItems:"center", gap:8 }}>
                     <span>🔗</span>
                     <span>Sau khi đặt hàng bạn sẽ được chuyển đến trang <span style={{color:"#F0F0F0"}}>PayOS</span> để hoàn tất thanh toán</span>
                   </div>
                 )}
 
-                <button onClick={handlePlaceOrder} disabled={processing || cart.length===0} style={{ width:"100%", marginTop:16, background:processing?"#2a0005":"linear-gradient(135deg,#E8000D,#8B0000)", border:"none", color:"#fff", fontFamily:"'Orbitron',monospace", fontSize:11, fontWeight:700, letterSpacing:1.5, padding:"15px 0", borderRadius:4, cursor:processing?"not-allowed":"pointer", boxShadow:"0 6px 22px rgba(232,0,13,.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={processing || cart.length===0}
+                  style={{ width:"100%", marginTop:16, background:processing?"#2a0005":"linear-gradient(135deg,#E8000D,#8B0000)", border:"none", color:"#fff", fontFamily:"'Orbitron',monospace", fontSize:11, fontWeight:700, letterSpacing:1.5, padding:"15px 0", borderRadius:4, cursor:processing?"not-allowed":"pointer", boxShadow:"0 6px 22px rgba(232,0,13,.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
                   {processing
                     ? <><span style={{ display:"inline-block", width:15, height:15, border:"2px solid rgba(255,255,255,.25)", borderTop:"2px solid #fff", borderRadius:"50%", animation:"spin .8s linear infinite" }}/> XỬ LÝ...</>
-                    : `ĐẶT HÀNG — ${formatPrice(total)}`}
+                    : `ĐẶT HÀNG — ${formatPrice(total)}`
+                  }
                 </button>
               </div>
             </div>
@@ -347,7 +359,6 @@ localStorage.setItem("lastBillId", billId);
               </div>
             </div>
 
-            {/* Cart items */}
             {cartLoading ? (
               <div style={{ padding:"30px 20px", textAlign:"center", color:"#333", fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:2 }}>ĐANG TẢI...</div>
             ) : cartError ? (
@@ -359,9 +370,9 @@ localStorage.setItem("lastBillId", billId);
                 {cart.map((item, i) => (
                   <div key={i} style={{ display:"flex", gap:11, padding:"9px 0", borderBottom:"1px solid #111", alignItems:"center" }}>
                     <div style={{ width:44, height:44, background:"#141414", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0, border:"1px solid #1e1e1e", overflow:"hidden" }}>
-                      {typeof getItemImage(item) === "string" && getItemImage(item).startsWith("http")
+                      {getItemImage(item)
                         ? <img src={getItemImage(item)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                        : getItemImage(item)
+                        : "📦"
                       }
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -385,13 +396,18 @@ localStorage.setItem("lastBillId", billId);
 
             {/* Totals */}
             <div style={{ padding:"15px 20px" }}>
-              {[["Tạm tính", formatPrice(subtotal)],["Phí ship", shipping===0?"🎉 Miễn phí":formatPrice(shipping)]].map(([k,v]) => (
+              {[
+                ["Tạm tính", formatPrice(subtotal)],
+                ["Phí ship",  shipping===0 ? "🎉 Miễn phí" : formatPrice(shipping)],
+              ].map(([k,v]) => (
                 <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:13 }}>
                   <span style={{color:"#555"}}>{k}</span>
                   <span style={{color:String(v).includes("Miễn")?"#22c55e":"#F0F0F0", fontWeight:600}}>{v}</span>
                 </div>
               ))}
-              {shipping===0 && subtotal>0 && <div style={{ fontSize:10, color:"#22c55e", textAlign:"right", marginBottom:8 }}>✓ Đủ điều kiện free ship</div>}
+              {shipping===0 && subtotal>0 && (
+                <div style={{ fontSize:10, color:"#22c55e", textAlign:"right", marginBottom:8 }}>✓ Đủ điều kiện free ship</div>
+              )}
               <div style={{ height:1, background:"linear-gradient(90deg,transparent,#E8000D,transparent)", margin:"11px 0" }}/>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
                 <span style={{ fontFamily:"'Orbitron',monospace", fontSize:8, color:"#555", letterSpacing:1 }}>TỔNG CỘNG</span>
@@ -400,7 +416,11 @@ localStorage.setItem("lastBillId", billId);
             </div>
 
             <div style={{ padding:"13px 20px", borderTop:"1px solid #161616", background:"#070707" }}>
-              {[["🛡️","Bảo hành 24 tháng chính hãng"],["🔄","Đổi trả 30 ngày miễn phí"],["🔒","Thanh toán bảo mật 100%"]].map(([icon,text]) => (
+              {[
+                ["🛡️","Bảo hành 24 tháng chính hãng"],
+                ["🔄","Đổi trả 30 ngày miễn phí"],
+                ["🔒","Thanh toán bảo mật 100%"],
+              ].map(([icon,text]) => (
                 <div key={text} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, fontSize:11, color:"#333" }}>
                   <span>{icon}</span><span>{text}</span>
                 </div>
@@ -410,9 +430,7 @@ localStorage.setItem("lastBillId", billId);
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

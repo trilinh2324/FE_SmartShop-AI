@@ -15,7 +15,8 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Search,ArrowLeft,
+  Search,
+  ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import "../../css/ProductUpdate.css";
@@ -31,7 +32,6 @@ const ProductUpdate = () => {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState(-1);
 
-  // ✅ FIX 1: thêm detailLabels
   const detailLabels = {
     screen: "Man hinh",
     cpu: "CPU",
@@ -68,7 +68,6 @@ const ProductUpdate = () => {
     colors: [],
   });
 
-  // LOAD CATEGORIES
   useEffect(() => {
     axios
       .get("/api/categories")
@@ -76,7 +75,6 @@ const ProductUpdate = () => {
       .catch(console.error);
   }, []);
 
-  // LOAD PRODUCT
   useEffect(() => {
     axios
       .get(`/api/products/${id}`)
@@ -129,18 +127,31 @@ const ProductUpdate = () => {
       },
     });
 
+  // ✅ FIX 1: không mutate state
   const handleColorChange = (i, e) => {
     const { name, value } = e.target;
-    const colors = [...form.colors];
-    colors[i][name] = name === "quantity" ? Number(value) || 0 : value;
-    setForm({ ...form, colors });
+
+    const newColors = form.colors.map((c, index) => {
+      if (index !== i) return c;
+
+      return {
+        ...c,
+        [name]: name === "quantity" ? Number(value) || 0 : value,
+      };
+    });
+
+    setForm({ ...form, colors: newColors });
   };
 
+  // ✅ FIX 2: addColor dùng callback
   const addColor = () =>
-    setForm({
-      ...form,
-      colors: [...form.colors, { colorName: "", quantity: 0, image: "" }],
-    });
+    setForm((prev) => ({
+      ...prev,
+      colors: [
+        ...prev.colors,
+        { colorName: "", quantity: 0, image: "" },
+      ],
+    }));
 
   const uploadImage = async (file) => {
     const fd = new FormData();
@@ -153,15 +164,20 @@ const ProductUpdate = () => {
     return res.data;
   };
 
+  // ✅ FIX 3: không mutate khi upload ảnh
   const handleColorImageChange = async (i, file) => {
     if (!file) return;
     setUploadingIndex(i);
 
     try {
       const path = await uploadImage(file);
-      const colors = [...form.colors];
-      colors[i].image = path;
-      setForm({ ...form, colors });
+
+      const newColors = form.colors.map((c, index) => {
+        if (index !== i) return c;
+        return { ...c, image: path };
+      });
+
+      setForm({ ...form, colors: newColors });
     } catch {
       alert("Upload anh that bai");
     } finally {
@@ -182,7 +198,17 @@ const ProductUpdate = () => {
       if (!v.trim()) e[`detail_${k}`] = "Khong duoc de trong";
     });
 
+    // ✅ FIX 4: chống duplicate màu
+    const colorNames = new Set();
+
     form.colors.forEach((c, i) => {
+      const name = c.colorName.trim().toLowerCase();
+
+      if (colorNames.has(name)) {
+        e[`colorName_${i}`] = "Mau bi trung";
+      }
+      colorNames.add(name);
+
       if (!c.colorName.trim()) e[`colorName_${i}`] = "Chua nhap ten mau";
       if (!c.image) e[`image_${i}`] = "Chua upload anh";
       if (!c.quantity || c.quantity <= 0)
@@ -217,7 +243,6 @@ const ProductUpdate = () => {
     }
   };
 
-  // ✅ FIX 2: thêm lại handleLogout
   const handleLogout = () => {
     localStorage.clear();
     navigate("/admin/login");
@@ -260,12 +285,12 @@ const ProductUpdate = () => {
                 <a onClick={() => navigate("/admin/newslist")}>
                   <Newspaper /> Tin Tuc
                 </a>
-                            <a onClick={() => navigate("/admin/orders")}>
-              <ShoppingCart /> Đơn hàng
-            </a>
-            <a onClick={() => navigate("/admin/users")}>
-              <Users /> Người dùng
-            </a>
+                <a onClick={() => navigate("/admin/orders")}>
+                  <ShoppingCart /> Đơn hàng
+                </a>
+                <a onClick={() => navigate("/admin/users")}>
+                  <Users /> Người dùng
+                </a>
               </nav>
               <div className="logout">
                 <a onClick={handleLogout}>
@@ -292,12 +317,12 @@ const ProductUpdate = () => {
           <a onClick={() => navigate("/admin/newslist")}>
             <Newspaper /> Tin Tuc
           </a>
-                      <a onClick={() => navigate("/admin/orders")}>
-              <ShoppingCart /> Đơn hàng
-            </a>
-            <a onClick={() => navigate("/admin/users")}>
-              <Users /> Người dùng
-            </a>
+          <a onClick={() => navigate("/admin/orders")}>
+            <ShoppingCart /> Đơn hàng
+          </a>
+          <a onClick={() => navigate("/admin/users")}>
+            <Users /> Người dùng
+          </a>
         </nav>
         <div className="logout">
           <a onClick={handleLogout}>
@@ -432,7 +457,7 @@ const ProductUpdate = () => {
               </div>
 
               {form.colors.map((c, i) => (
-                <div className="color-row" key={i}>
+                <div className="color-row" key={`${c.colorName}-${i}`}>
                   <div className="color-preview">
                     {uploadingIndex === i ? (
                       <p>Uploading...</p>

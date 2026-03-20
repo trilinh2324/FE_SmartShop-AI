@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE = "http://localhost:8080";
 const fmt = (n) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n || 0);
@@ -10,41 +11,65 @@ const fmtDate = (d) => {
 
 function getToken() { return localStorage.getItem("token"); }
 
-export default function PaymentSuccess({ setActivePage }) {
-  const [bill,    setBill]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [count,   setCount]   = useState(0);
-  const [visible, setVisible] = useState(false);
+export default function PaymentSuccess() {
+  const navigate = useNavigate();
 
-  // ✅ FIX: lấy billId đúng cách — không dùng searchParams bên ngoài component
-  const billId = new URLSearchParams(window.location.search).get("billId")
-    || localStorage.getItem("lastBillId");
+  const [bill,         setBill]         = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [count,        setCount]        = useState(0);
+  const [visible,      setVisible]      = useState(false);
+  const [confirmDone,  setConfirmDone]  = useState(false);
+  const [confirmError, setConfirmError] = useState(null);
+  const [paidStatus,   setPaidStatus]   = useState(null); // "PAID" | "FAILED" | ...
 
+  // Tránh gọi 2 lần (React StrictMode)
+  const confirmCalledRef = useRef(false);
+
+  const billId =
+    new URLSearchParams(window.location.search).get("billId") ||
+    localStorage.getItem("lastBillId");
+
+  // ── Gọi confirm-success + lấy bill song song khi mount ──
   useEffect(() => {
     setTimeout(() => setVisible(true), 80);
 
-    if (!billId) { setLoading(false); return; }
+    if (!billId) {
+      setLoading(false);
+      return;
+    }
 
-    // ✅ FIX: kiểm tra paymentStatus trước khi lấy chi tiết bill
+    if (confirmCalledRef.current) return;
+    confirmCalledRef.current = true;
+
     const token = getToken();
-    fetch(`${API_BASE}/api/user/bill/${billId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) {
-          if (data.paymentStatus === "PAID") {
-            setBill(data);
-          } else {
-            // Đang xử lý hoặc chờ — vẫn hiện bill nhưng có thể báo trạng thái
-            setBill(data);
-          }
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [billId]); // ✅ FIX: thêm billId vào dependency array
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  // Animated total counter
+    Promise.all([
+      // 1️⃣ Xác nhận thanh toán thành công → cập nhật PAID nếu cần
+      fetch(`${API_BASE}/api/payment/confirm-success/${billId}`, {
+        method: "GET",
+        headers,
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.error) {
+            setConfirmError(d.error);
+          } else {
+            setConfirmDone(true);
+            setPaidStatus(d.status); // "PAID", "FAILED", ...
+          }
+        })
+        .catch(() => setConfirmError("Lỗi kết nối khi xác nhận thanh toán")),
+
+      // 2️⃣ Lấy thông tin bill để hiển thị
+      fetch(`${API_BASE}/api/user/bill/${billId}`, { headers })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) setBill(data); })
+        .catch(() => {}),
+    ]).finally(() => setLoading(false));
+  }, [billId]);
+
+  // ── Animated total counter ──
   useEffect(() => {
     if (!bill?.totalPayableAmount && !bill?.totalAmount) return;
     const target = bill.totalPayableAmount || bill.totalAmount;
@@ -52,7 +77,7 @@ export default function PaymentSuccess({ setActivePage }) {
     const steps  = 50;
     const inc    = target / steps;
     let cur      = 0;
-    const t      = setInterval(() => {
+    const t = setInterval(() => {
       cur += inc;
       if (cur >= target) { setCount(target); clearInterval(t); }
       else setCount(Math.floor(cur));
@@ -60,12 +85,14 @@ export default function PaymentSuccess({ setActivePage }) {
     return () => clearInterval(t);
   }, [bill]);
 
-  const orderCode   = bill?.id ? `#TZ${String(bill.id).padStart(8, "0")}` : billId ? `#TZ${String(billId).padStart(8,"0")}` : "#TZ--------";
+  const orderCode   = bill?.id
+    ? `#TZ${String(bill.id).padStart(8, "0")}`
+    : billId ? `#TZ${String(billId).padStart(8, "0")}` : "#TZ--------";
   const items       = bill?.items || bill?.billItems || [];
   const total       = bill?.totalPayableAmount || bill?.totalAmount || 0;
   const method      = bill?.paymentMethod || "";
   const address     = [bill?.recipientAddress, bill?.selectedDistrict, bill?.selectedProvince].filter(Boolean).join(", ");
-  const methodLabel = { COD:"Thanh toán khi nhận hàng", BANKING:"Chuyển khoản ngân hàng", MOMO:"Ví MoMo", VNPAY:"VNPay" }[method] || method;
+  const methodLabel = { COD:"Thanh toán khi nhận hàng", BANKING:"Chuyển khoản ngân hàng", VNPAY:"VNPay", PAYOS:"PayOS" }[method] || method;
 
   const getItemName  = (i) => i.productColor?.product?.name || i.name || "Sản phẩm";
   const getItemColor = (i) => i.productColor?.color?.name || "";
@@ -73,28 +100,56 @@ export default function PaymentSuccess({ setActivePage }) {
   const getItemPrice = (i) => i.price || i.productColor?.product?.price || 0;
   const getItemQty   = (i) => i.quantity || i.qty || 1;
 
+  // Trạng thái thực tế: ưu tiên từ confirm API, fallback từ bill
+  const actualStatus = paidStatus || bill?.paymentStatus;
+  const isPaid   = actualStatus === "PAID";
+  const isFailed = actualStatus === "FAILED" || actualStatus === "CANCELLED";
+
   return (
     <div style={s.wrap}>
       <div style={s.gridBg} />
       <div style={s.glow} />
 
-      <div style={{ ...s.inner, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(28px)", transition: "opacity .6s ease, transform .6s ease" }}>
+      <div style={{
+        ...s.inner,
+        opacity:    visible ? 1 : 0,
+        transform:  visible ? "translateY(0)" : "translateY(28px)",
+        transition: "opacity .6s ease, transform .6s ease",
+      }}>
 
-        {/* ── Success icon ── */}
+        {/* ── Success / Failed icon ── */}
         <div style={s.iconWrap}>
           <div style={s.iconRing1} />
           <div style={s.iconRing2} />
-          <div style={s.iconCircle}>
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <path d="M8 21L16 29L32 13" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{ strokeDasharray:40, strokeDashoffset: visible?0:40, transition:"stroke-dashoffset .7s .3s ease" }}/>
-            </svg>
+          <div style={{
+            ...s.iconCircle,
+            ...(isFailed ? {
+              background: "linear-gradient(135deg,#1a0000,#2d0005)",
+              border: "2px solid #ef4444",
+              boxShadow: "0 0 30px rgba(239,68,68,.35), inset 0 0 20px rgba(239,68,68,.08)",
+            } : {}),
+          }}>
+            {isFailed ? (
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <path d="M12 12L28 28M28 12L12 28" stroke="#fff" strokeWidth="3.5" strokeLinecap="round"
+                  style={{ strokeDasharray:40, strokeDashoffset: visible?0:40, transition:"stroke-dashoffset .7s .3s ease" }}/>
+              </svg>
+            ) : (
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <path d="M8 21L16 29L32 13" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ strokeDasharray:40, strokeDashoffset: visible?0:40, transition:"stroke-dashoffset .7s .3s ease" }}/>
+              </svg>
+            )}
           </div>
         </div>
 
         {/* ── Heading ── */}
-        <div style={s.tagLine}>GIAO DỊCH THÀNH CÔNG</div>
-        <h1 style={s.heading}>CẢM ƠN BẠN ĐÃ<br/>MUA HÀNG!</h1>
+        <div style={s.tagLine}>
+          {isFailed ? "THANH TOÁN THẤT BẠI" : "GIAO DỊCH THÀNH CÔNG"}
+        </div>
+        <h1 style={s.heading}>
+          {isFailed ? <>GIAO DỊCH<br/>THẤT BẠI</> : <>CẢM ƠN BẠN ĐÃ<br/>MUA HÀNG!</>}
+        </h1>
         <div style={s.accent}><div style={s.aBar}/><div style={s.aDot}/><div style={s.aBar}/></div>
 
         {/* ── Order code ── */}
@@ -103,10 +158,56 @@ export default function PaymentSuccess({ setActivePage }) {
           <span style={s.orderCode}>{orderCode}</span>
         </div>
 
+        {/* ── Trạng thái xác nhận ── */}
+        {!loading && (
+          <div style={{
+            ...s.confirmStatusBox,
+            borderColor: isPaid
+              ? "rgba(16,185,129,.3)"
+              : isFailed
+                ? "rgba(239,68,68,.3)"
+                : confirmError
+                  ? "rgba(239,68,68,.3)"
+                  : "rgba(232,0,13,.2)",
+          }}>
+            {isPaid && confirmDone && (
+              <span style={{ color:"#10b981", fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:1.5 }}>
+                ✅ ĐÃ XÁC NHẬN THANH TOÁN THÀNH CÔNG
+              </span>
+            )}
+            {isFailed && (
+              <span style={{ color:"#ef4444", fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:1.5 }}>
+                ❌ THANH TOÁN KHÔNG THÀNH CÔNG
+              </span>
+            )}
+            {confirmError && !isFailed && (
+              <span style={{ color:"#ef4444", fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:1.5 }}>
+                ⚠️ {confirmError}
+              </span>
+            )}
+            {!confirmDone && !confirmError && !isFailed && (
+              <span style={{ color:"#E8000D", fontFamily:"'Orbitron',monospace", fontSize:9, letterSpacing:1.5 }}>
+                ⏳ ĐANG XÁC NHẬN THANH TOÁN...
+              </span>
+            )}
+          </div>
+        )}
+
         {loading ? (
-          <div style={s.loadRow}><div style={s.spin}/><span style={s.gray}>ĐANG TẢI THÔNG TIN...</span></div>
+          <div style={s.loadRow}><div style={s.spin}/><span style={s.gray}>ĐANG XỬ LÝ...</span></div>
         ) : (
           <div style={s.card}>
+
+            {/* Header badge */}
+            <div style={s.cardHeader}>
+              <span style={s.cardHeaderLabel}>📋 THÔNG TIN ĐƠN HÀNG</span>
+              {isPaid
+                ? <span style={s.paidBadge}>✅ ĐÃ THANH TOÁN</span>
+                : isFailed
+                  ? <span style={s.failedBadge}>❌ THẤT BẠI</span>
+                  : <span style={s.pendingBadge}>⏳ CHỜ XÁC NHẬN</span>
+              }
+            </div>
 
             {/* ── Items ── */}
             {items.length > 0 && (
@@ -177,15 +278,17 @@ export default function PaymentSuccess({ setActivePage }) {
           </div>
         )}
 
-        {/* ── Notice ── */}
-        <div style={s.notice}>
-          <span style={s.noticeIcon}>📱</span>
-          <span style={s.noticeText}>
-            Chúng tôi sẽ liên hệ xác nhận qua{" "}
-            <strong style={{color:"#F0F0F0"}}>{bill?.recipientPhone || "số điện thoại của bạn"}</strong>{" "}
-            trong vòng <strong style={{color:"#E8000D"}}>30 phút</strong>.
-          </span>
-        </div>
+        {/* ── Notice (chỉ hiện khi thành công) ── */}
+        {!isFailed && (
+          <div style={s.notice}>
+            <span style={s.noticeIcon}>📱</span>
+            <span style={s.noticeText}>
+              Chúng tôi sẽ liên hệ xác nhận qua{" "}
+              <strong style={{color:"#F0F0F0"}}>{bill?.recipientPhone || "số điện thoại của bạn"}</strong>{" "}
+              trong vòng <strong style={{color:"#E8000D"}}>30 phút</strong>.
+            </span>
+          </div>
+        )}
 
         {/* ── Badges ── */}
         <div style={s.badges}>
@@ -199,10 +302,10 @@ export default function PaymentSuccess({ setActivePage }) {
 
         {/* ── Actions ── */}
         <div style={s.actions}>
-          <button style={s.btnPrimary}    onClick={() => setActivePage && setActivePage("/user/home")}>
+          <button style={s.btnPrimary} onClick={() => navigate("/users/homepage")}>
             🛒 TIẾP TỤC MUA HÀNG
           </button>
-          <button style={s.btnSecondary} onClick={() => setActivePage && setActivePage("/user/profile")}>
+          <button style={s.btnSecondary} onClick={() => navigate("/users/homepage", { state: { page: "profile" } })}>
             📦 XEM ĐƠN HÀNG
           </button>
         </div>
@@ -235,16 +338,24 @@ const s = {
   aBar:    { width:44, height:2, background:"linear-gradient(90deg,transparent,#E8000D)" },
   aDot:    { width:6, height:6, borderRadius:"50%", background:"#E8000D", boxShadow:"0 0 10px rgba(232,0,13,.9)" },
 
-  orderCodeWrap:  { display:"flex", flexDirection:"column", alignItems:"center", gap:5, marginBottom:24 },
+  orderCodeWrap:  { display:"flex", flexDirection:"column", alignItems:"center", gap:5, marginBottom:16 },
   orderCodeLabel: { fontFamily:"'Orbitron',monospace", fontSize:8, letterSpacing:3, color:"#333" },
   orderCode:      { fontFamily:"'Orbitron',monospace", fontSize:18, fontWeight:900, color:"#E8000D", letterSpacing:2, textShadow:"0 0 16px rgba(232,0,13,.4)" },
+
+  confirmStatusBox: { width:"100%", padding:"10px 16px", borderRadius:6, border:"1px solid", background:"rgba(0,0,0,.3)", marginBottom:16, textAlign:"center" },
 
   loadRow: { display:"flex", alignItems:"center", gap:12, padding:"30px 0" },
   spin:    { width:18, height:18, border:"2px solid #1a1a1a", borderTop:"2px solid #E8000D", borderRadius:"50%", animation:"spin .8s linear infinite" },
   gray:    { fontFamily:"'Orbitron',monospace", fontSize:9, color:"#333", letterSpacing:2 },
 
-  card:    { width:"100%", background:"#0A0A0A", border:"1px solid #1a1a1a", borderRadius:8, overflow:"hidden", marginBottom:18 },
-  section: { padding:"18px 22px" },
+  card:            { width:"100%", background:"#0A0A0A", border:"1px solid #1a1a1a", borderRadius:8, overflow:"hidden", marginBottom:18 },
+  cardHeader:      { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"13px 18px", borderBottom:"1px solid #141414" },
+  cardHeaderLabel: { fontFamily:"'Orbitron',monospace", fontSize:8, letterSpacing:2, color:"#444" },
+  paidBadge:       { background:"rgba(16,185,129,.1)", border:"1px solid rgba(16,185,129,.3)", color:"#10b981", fontFamily:"'Orbitron',monospace", fontSize:7.5, padding:"2px 9px", borderRadius:2, letterSpacing:1 },
+  failedBadge:     { background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.3)", color:"#ef4444", fontFamily:"'Orbitron',monospace", fontSize:7.5, padding:"2px 9px", borderRadius:2, letterSpacing:1 },
+  pendingBadge:    { background:"rgba(245,158,11,.1)", border:"1px solid rgba(245,158,11,.25)", color:"#f59e0b", fontFamily:"'Orbitron',monospace", fontSize:7.5, padding:"2px 9px", borderRadius:2, letterSpacing:1 },
+
+  section:      { padding:"18px 22px" },
   sectionLabel: { fontFamily:"'Orbitron',monospace", fontSize:8, letterSpacing:2, color:"#444", marginBottom:13 },
 
   itemList:  { display:"flex", flexDirection:"column", gap:10 },
