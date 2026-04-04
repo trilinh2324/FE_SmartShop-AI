@@ -16,7 +16,7 @@ import AdminUserPage from "./Admin/pages/AdminUser/AdminUserPage";
 import AdminOrderPage from "./Admin/pages/oders/AdminOrderPage";
 import AdminOrderDetailPage from "./Admin/pages/oders/AdminOrderDetailPage";
 import NewsDetail from "./Admin/pages/News/NewsDetail";
-
+import Comment from "./Admin1/pages/Comment/CommentReviewManagement"
 import HomePage from "./Users/pages/HomePage";
 import LoginForm from "./Users/components/LoginForm";
 import RegisterForm from "./Users/components/RegisterForm";
@@ -55,7 +55,7 @@ function App() {
           {/* ADMIN */}
           <Route path="admin/login" element={<Login />} />
           <Route path="/admin/home" element={<Dashboard />} />
-
+          <Route path="/admin/comment" element={< Comment />} />
           <Route path="/admin/products" element={<ProductList />} />
           <Route path="/admin/productscreate" element={<ProductCreate />} />
           <Route path="/admin/products/update/:id" element={<ProductUpdate />} />

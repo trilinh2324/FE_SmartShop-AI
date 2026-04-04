@@ -1,29 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Package, ShoppingCart, Users,
   DollarSign, LogOut, LayoutGrid, Newspaper,
-  TrendingUp, TrendingDown,
+  TrendingUp, TrendingDown, Calendar, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Dashboard.css";
 
 const API_BASE = "http://localhost:8080";
-
-const areaData = [
-  { month: "Jan", revenue: 18, orders: 120 },
-  { month: "Feb", revenue: 22, orders: 145 },
-  { month: "Mar", revenue: 19, orders: 130 },
-  { month: "Apr", revenue: 31, orders: 200 },
-  { month: "May", revenue: 27, orders: 175 },
-  { month: "Jun", revenue: 35, orders: 220 },
-  { month: "Jul", revenue: 40, orders: 260 },
-  { month: "Aug", revenue: 38, orders: 245 },
-  { month: "Sep", revenue: 45, orders: 290 },
-  { month: "Oct", revenue: 52, orders: 320 },
-  { month: "Nov", revenue: 48, orders: 305 },
-  { month: "Dec", revenue: 60, orders: 380 },
-];
 
 const trafficData = [
   { name: "Direct",   value: 36, color: "#ef4444" },
@@ -41,25 +26,41 @@ const goals = [
 const fmt = (n) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 
+const fmtAxis = (n) => {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}B`;
+  if (n >= 1)    return `${n.toFixed(0)}M`;
+  return `${(n * 1000).toFixed(0)}K`;
+};
+
 /* ── SVG Area Chart ── */
 function MiniAreaChart({ data, dataKey, color }) {
+  if (!data || data.length < 2) {
+    return (
+      <div style={{ height: 160, display: "flex", alignItems: "center",
+        justifyContent: "center", color: "#cbd5e1", fontSize: 13 }}>
+        Không có dữ liệu
+      </div>
+    );
+  }
   const values = data.map(d => d[dataKey]);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const W = 560, H = 160;
-  const pad = { t: 10, r: 10, b: 30, l: 44 };
+  const pad = { t: 10, r: 10, b: 30, l: 50 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
-  const x = (i) => pad.l + (i / (data.length - 1)) * iw;
-  const y = (v) => pad.t + ih - ((v - min) / (max - min || 1)) * ih;
+  const x  = (i) => pad.l + (i / (data.length - 1)) * iw;
+  const y  = (v) => pad.t + ih - ((v - min) / (max - min || 1)) * ih;
   const pts  = data.map((d, i) => `${x(i)},${y(d[dataKey])}`).join(" ");
-  const area = `${x(0)},${H - pad.b} ` + pts + ` ${x(data.length - 1)},${H - pad.b}`;
+  const area = `${x(0)},${H - pad.b} ${pts} ${x(data.length - 1)},${H - pad.b}`;
+  const step = Math.ceil(data.length / 12);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 160 }} preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 160 }}
+      preserveAspectRatio="none">
       <defs>
         <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={color} stopOpacity="0.18" />
+          <stop offset="0%"   stopColor={color} stopOpacity="0.2" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -68,28 +69,35 @@ function MiniAreaChart({ data, dataKey, color }) {
         const val = min + (max - min) * f;
         return (
           <g key={i}>
-            <line x1={pad.l} y1={yy} x2={W - pad.r} y2={yy} stroke="#f1f5f9" strokeWidth="1" />
+            <line x1={pad.l} y1={yy} x2={W - pad.r} y2={yy}
+              stroke="#f1f5f9" strokeWidth="1" />
             <text x={pad.l - 6} y={yy + 4} textAnchor="end" fontSize="10" fill="#94a3b8">
-              {dataKey === "revenue" ? `${val.toFixed(0)}M` : Math.round(val)}
+              {dataKey === "revenue" ? fmtAxis(val) : Math.round(val)}
             </text>
           </g>
         );
       })}
-      {data.map((d, i) => (
-        <text key={i} x={x(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#94a3b8">
-          {d.month}
-        </text>
-      ))}
+      {data.map((d, i) =>
+        i % step === 0 && (
+          <text key={i} x={x(i)} y={H - 6} textAnchor="middle" fontSize="9" fill="#94a3b8">
+            {d.label}
+          </text>
+        )
+      )}
       <polygon points={area} fill={`url(#grad-${dataKey})`} />
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5"
         strokeLinecap="round" strokeLinejoin="round" />
+      {data.length <= 31 && data.map((d, i) => (
+        <circle key={i} cx={x(i)} cy={y(d[dataKey])} r="2.5"
+          fill={color} stroke="#fff" strokeWidth="1.5" opacity="0.7" />
+      ))}
       <circle cx={x(data.length - 1)} cy={y(values[values.length - 1])} r="4"
         fill={color} stroke="#fff" strokeWidth="2" />
     </svg>
   );
 }
 
-/* ── SVG Donut Chart ── */
+/* ── Donut Chart ── */
 function DonutChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const r = 38, cx = 55, cy = 55, stroke = 16;
@@ -121,34 +129,107 @@ function DonutChart({ data }) {
   );
 }
 
+/* ── Period Selector ── */
+function PeriodSelector({ period, date, onPeriod, onDate }) {
+  const d = new Date(date + "T00:00:00");
+
+  const label = () => {
+    if (period === "day")
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    if (period === "month")
+      return d.toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
+    return `Năm ${d.getFullYear()}`;
+  };
+
+  const shift = (dir) => {
+    const nd = new Date(d);
+    if (period === "day")   nd.setDate(nd.getDate() + dir);
+    if (period === "month") nd.setMonth(nd.getMonth() + dir);
+    if (period === "year")  nd.setFullYear(nd.getFullYear() + dir);
+    onDate(nd.toISOString().split("T")[0]);
+  };
+
+  return (
+    <div className="period-bar">
+      <div className="period-tabs">
+        {[{ key: "day", label: "Ngày" }, { key: "month", label: "Tháng" }, { key: "year", label: "Năm" }]
+          .map(p => (
+            <button key={p.key}
+              className={`period-tab ${period === p.key ? "active" : ""}`}
+              onClick={() => onPeriod(p.key)}>
+              {p.label}
+            </button>
+          ))}
+      </div>
+      <div className="date-nav">
+        <button className="dnav-btn" onClick={() => shift(-1)}><ChevronLeft size={14} /></button>
+        <span className="dnav-label"><Calendar size={12} />{label()}</span>
+        <button className="dnav-btn" onClick={() => shift(1)}><ChevronRight size={14} /></button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Dashboard ── */
 export default function Dashboard() {
-  const [open,  setOpen]  = useState(false);
-  const [tab,   setTab]   = useState("Revenue");
-  const [stats, setStats] = useState(null);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [open,      setOpen]      = useState(false);
+  const [tab,       setTab]       = useState("Revenue");
+  const [period,    setPeriod]    = useState("month");
+  const [date,      setDate]      = useState(new Date().toISOString().split("T")[0]);
+  const [stats,     setStats]     = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [loading,   setLoading]   = useState(false);
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const getToken = () => localStorage.getItem("token");
+
+  const fetchSummary = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/stats/summary?period=${period}&date=${date}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) return;
+      const json = await res.json();
+      const d    = json.data ?? json;
+      setStats({
+        revenue:    d.revenue    ?? 0,
+        orders:     d.orders     ?? 0,
+        products:   d.products   ?? 0,
+        users:      d.users      ?? 0,
+        revChange:  d.revChange  ?? 0,
+        ordChange:  d.ordChange  ?? 0,
+        prodChange: d.prodChange ?? 0,
+        usrChange:  d.usrChange  ?? 0,
+      });
+    } catch (_) {}
+  }, [period, date]);
+
+  const fetchChart = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/stats/revenue-chart?period=${period}&date=${date}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setChartData(json.data ?? json ?? []);
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, [period, date]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) { navigate("/admin/login", { replace: true }); return; }
-    Promise.all([
-      fetch(`${API_BASE}/api/admin/stats/revenue`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`${API_BASE}/api/admin/stats/orders`,   { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`${API_BASE}/api/admin/stats/products`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`${API_BASE}/api/admin/stats/users`,    { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([rev, ord, prod, usr]) => {
-      setStats({
-        revenue:    rev?.total   ?? 120000000,
-        orders:     ord?.total   ?? 320,
-        products:   prod?.total  ?? 150,
-        users:      usr?.total   ?? 78,
-        revChange:  rev?.change  ?? 4.89,
-        ordChange:  ord?.change  ?? 4.63,
-        prodChange: prod?.change ?? -3.62,
-        usrChange:  usr?.change  ?? 44.71,
-      });
-    });
-  }, [navigate]);
+    if (!getToken()) { navigate("/admin/login", { replace: true }); return; }
+    fetchSummary();
+    fetchChart();
+  }, [period, date, navigate, fetchSummary, fetchChart]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "auto";
@@ -174,22 +255,30 @@ export default function Dashboard() {
     setTimeout(() => window.location.reload(), 100);
   };
 
-  const s = stats || { revenue: 120000000, orders: 320, products: 150, users: 78, revChange: 4.89, ordChange: 4.63, prodChange: -3.62, usrChange: 44.71 };
+  const s = stats ?? {
+    revenue: 0, orders: 0, products: 0, users: 0,
+    revChange: 0, ordChange: 0, prodChange: 0, usrChange: 0,
+  };
+
+  const periodSuffix =
+    period === "day" ? "hôm nay" : period === "month" ? "tháng này" : "năm nay";
 
   const statCards = [
-    { icon: <DollarSign />,  label: "Doanh thu",   value: fmt(s.revenue),  change: s.revChange,  color: "#ef4444" },
-    { icon: <ShoppingCart />,label: "Đơn hàng",   value: s.orders,        change: s.ordChange,  color: "#3b82f6" },
-    { icon: <Package />,     label: "Sản phẩm",   value: s.products,      change: s.prodChange, color: "#8b5cf6" },
-    { icon: <Users />,       label: "Người dùng", value: s.users,         change: s.usrChange,  color: "#f59e0b" },
+    { icon: <DollarSign />,   label: `Doanh thu ${periodSuffix}`, value: fmt(s.revenue),  change: s.revChange,  color: "#ef4444" },
+    { icon: <ShoppingCart />, label: `Đơn hàng ${periodSuffix}`,  value: s.orders,        change: s.ordChange,  color: "#3b82f6" },
+    { icon: <Package />,      label: "Tổng sản phẩm",             value: s.products,      change: s.prodChange, color: "#8b5cf6" },
+    { icon: <Users />,        label: "Tổng người dùng",           value: s.users,         change: s.usrChange,  color: "#f59e0b" },
   ];
 
   const chartDataKey = tab === "Revenue" ? "revenue" : "orders";
   const chartColor   = tab === "Revenue" ? "#ef4444" : "#3b82f6";
+  const chartSubtitle =
+    period === "day"   ? "Theo giờ trong ngày"   :
+    period === "month" ? "Theo ngày trong tháng" : "Theo tháng trong năm";
 
   return (
     <div className="admin">
 
-      {/* MOBILE SIDEBAR */}
       <AnimatePresence>
         {open && (
           <>
@@ -216,7 +305,6 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* DESKTOP SIDEBAR */}
       <aside className="sidebar desktop">
         <h2>SMARTSHOP</h2>
         <nav>
@@ -230,26 +318,30 @@ export default function Dashboard() {
         <div className="logout"><a onClick={handleLogout}><LogOut />Đăng xuất</a></div>
       </aside>
 
-      {/* MAIN — dùng class admin-main thay vì <main> bare */}
       <div className="admin-main">
         <header className="admin-header">
           <button className="menu-btn" onClick={() => setOpen(true)}>
             <Menu size={22} />
           </button>
-          <div className="header-left">
-            <h3>Dashboard</h3>
-          </div>
+          <div className="header-left"><h3>Dashboard</h3></div>
           <img src="https://i.pravatar.cc/40" alt="admin" />
         </header>
 
         <div className="dash-body">
 
-          {/* STAT CARDS */}
+          <PeriodSelector
+            period={period} date={date}
+            onPeriod={setPeriod} onDate={setDate}
+          />
+
           <div className="stat-grid">
             {statCards.map((c, i) => (
-              <motion.div key={i} className="stat-card" whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
+              <motion.div key={i} className="stat-card"
+                whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
                 <div className="stat-top">
-                  <div className="stat-icon" style={{ background: c.color + "18", color: c.color }}>{c.icon}</div>
+                  <div className="stat-icon" style={{ background: c.color + "18", color: c.color }}>
+                    {c.icon}
+                  </div>
                   <span className={`stat-change ${c.change >= 0 ? "up" : "down"}`}>
                     {c.change >= 0 ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
                     {Math.abs(c.change)}%
@@ -260,41 +352,48 @@ export default function Dashboard() {
                 <svg className="sparkline" viewBox="0 0 80 28" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id={`sg${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={c.color} stopOpacity="0.2"/>
+                      <stop offset="0%"   stopColor={c.color} stopOpacity="0.2"/>
                       <stop offset="100%" stopColor={c.color} stopOpacity="0"/>
                     </linearGradient>
                   </defs>
                   <polygon
                     points={`0,28 ${[18,14,16,10,12,8,10,6,8,4,6,3].map((v,j)=>`${j*(80/11)},${v}`).join(" ")} 80,28`}
-                    fill={`url(#sg${i})`}
-                  />
+                    fill={`url(#sg${i})`} />
                   <polyline
                     points={[18,14,16,10,12,8,10,6,8,4,6,3].map((v,j)=>`${j*(80/11)},${v}`).join(" ")}
                     fill="none" stroke={c.color} strokeWidth="2"
-                    strokeLinecap="round" strokeLinejoin="round"
-                  />
+                    strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <div className="stat-footer">vs last month</div>
+                <div className="stat-footer">so với kỳ trước</div>
               </motion.div>
             ))}
           </div>
 
-          {/* BOTTOM ROW */}
           <div className="dash-row">
             <div className="chart-card">
               <div className="card-head">
                 <div>
-                  <div className="card-title">Overview</div>
-                  <div className="card-sub">Monthly performance for the current year</div>
+                  <div className="card-title">Biểu đồ tổng quan</div>
+                  <div className="card-sub">{chartSubtitle}</div>
                 </div>
                 <div className="tab-group">
-                  {["Revenue", "Orders"].map(t => (
-                    <button key={t} className={`tab-btn ${tab === t ? "active" : ""}`}
-                      onClick={() => setTab(t)}>{t}</button>
+                  {[{ key: "Revenue", label: "Doanh thu" }, { key: "Orders", label: "Đơn hàng" }].map(t => (
+                    <button key={t.key}
+                      className={`tab-btn ${tab === t.key ? "active" : ""}`}
+                      onClick={() => setTab(t.key)}>
+                      {t.label}
+                    </button>
                   ))}
                 </div>
               </div>
-              <MiniAreaChart data={areaData} dataKey={chartDataKey} color={chartColor} />
+              {loading ? (
+                <div className="chart-loading">
+                  <span className="chart-spinner" />
+                  Đang tải dữ liệu…
+                </div>
+              ) : (
+                <MiniAreaChart data={chartData} dataKey={chartDataKey} color={chartColor} />
+              )}
             </div>
 
             <div className="right-col">
@@ -337,6 +436,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
